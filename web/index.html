@@ -1,0 +1,1821 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TCG 持仓看板</title>
+<style>
+/* ═══════════════════════════════════════════
+   Design Tokens — Card Trading Room
+   ═══════════════════════════════════════════ */
+:root {
+  /* Dark (default — 交易室氛围) */
+  --bg: #0D0F14; --bg-secondary: #161921;
+  --surface: #1A1D27; --surface-hover: #222636;
+  --surface-elevated: #252A3A;
+  --text-primary: #E8E9ED; --text-secondary: #8B8FA3; --text-tertiary: #555A6E;
+  --border: rgba(255,255,255,0.06); --border-strong: rgba(255,255,255,0.12);
+  --up: #FF4D4F; --up-soft: rgba(255,77,79,0.10); --up-medium: rgba(255,77,79,0.18);
+  --down: #3BCC6C; --down-soft: rgba(59,204,108,0.10); --down-medium: rgba(59,204,108,0.18);
+  --accent: #D4A843; --accent-soft: rgba(212,168,67,0.10); --accent-medium: rgba(212,168,67,0.18);
+  --accent-glow: rgba(212,168,67,0.35);
+  --warning: #E8923A; --warning-soft: rgba(232,146,58,0.10);
+  --holo-start: #A78BFA; --holo-mid: #60A5FA; --holo-end: #34D399;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.4);
+  --shadow-lg: 0 12px 48px rgba(0,0,0,0.5);
+  --shadow-gold: 0 0 20px rgba(212,168,67,0.15);
+  --radius-sm: 8px; --radius-md: 12px; --radius-lg: 16px;
+  --transition: 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+[data-theme="light"] {
+  --bg: #F0EDE6; --bg-secondary: #E5E1D8;
+  --surface: #FFFFFF; --surface-hover: #F8F6F2;
+  --surface-elevated: #FDFCFA;
+  --text-primary: #1A1612; --text-secondary: #7A7568; --text-tertiary: #A9A496;
+  --border: rgba(0,0,0,0.07); --border-strong: rgba(0,0,0,0.13);
+  --up: #DC2626; --up-soft: rgba(220,38,38,0.07); --up-medium: rgba(220,38,38,0.14);
+  --down: #16A34A; --down-soft: rgba(22,163,74,0.07); --down-medium: rgba(22,163,74,0.14);
+  --accent: #B8860B; --accent-soft: rgba(184,134,11,0.07); --accent-medium: rgba(184,134,11,0.14);
+  --accent-glow: rgba(184,134,11,0.25);
+  --warning: #D97706; --warning-soft: rgba(217,119,6,0.07);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.06);
+  --shadow-lg: 0 12px 40px rgba(0,0,0,0.10);
+  --shadow-gold: 0 0 15px rgba(184,134,11,0.12);
+}
+
+/* ═══════════════════════════════════════════
+   Base
+   ═══════════════════════════════════════════ */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: var(--bg); color: var(--text-primary);
+  line-height: 1.5; min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  transition: background var(--transition), color var(--transition);
+}
+
+/* ═══════════════════════════════════════════
+   Header — Trading Room Bar
+   ═══════════════════════════════════════════ */
+.header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 24px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 100;
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  transition: background var(--transition);
+}
+.header-left { display: flex; align-items: center; gap: 12px; }
+.header-logo {
+  width: 40px; height: 40px; border-radius: 10px;
+  background: linear-gradient(135deg, #D4A843 0%, #8B6914 50%, #D4A843 100%);
+  background-size: 200% 200%;
+  animation: shimmerLogo 3s ease infinite;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.2rem; color: #0D0F14; flex-shrink: 0;
+  box-shadow: var(--shadow-gold);
+  border: 1px solid rgba(212,168,67,0.3);
+}
+@keyframes shimmerLogo {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.header h1 {
+  font-size: 1.15rem; font-weight: 800; letter-spacing: -0.02em;
+  background: linear-gradient(135deg, var(--accent) 0%, #F0D78C 50%, var(--accent) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+[data-theme="light"] .header h1 {
+  background: linear-gradient(135deg, #8B6914 0%, #B8860B 50%, #8B6914 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.header-subtitle { font-size: 0.7rem; color: var(--text-tertiary); margin-top: -2px; letter-spacing: 0.03em; }
+.header-right { display: flex; align-items: center; gap: 10px; }
+.update-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 14px; border-radius: 20px; font-size: 0.73rem; font-weight: 500;
+  background: var(--accent-soft); color: var(--accent);
+  border: 1px solid rgba(212,168,67,0.15);
+}
+.update-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 2s infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+.theme-toggle {
+  width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--border);
+  background: var(--surface); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem; transition: all var(--transition); color: var(--text-secondary);
+}
+.theme-toggle:hover { background: var(--surface-hover); border-color: var(--accent); color: var(--accent); }
+
+/* ═══════════════════════════════════════════
+   Container
+   ═══════════════════════════════════════════ */
+.container { max-width: 1400px; margin: 0 auto; padding: 24px; }
+
+/* ═══════════════════════════════════════════
+   Hero Stats — The Vault Display
+   ═══════════════════════════════════════════ */
+.hero-stats {
+  display: grid; grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 14px; margin-bottom: 24px;
+}
+.hero-card {
+  background: var(--surface); border-radius: var(--radius-md);
+  padding: 20px; box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
+  transition: all var(--transition); position: relative; overflow: hidden;
+}
+.hero-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+.hero-card .label {
+  font-size: 0.7rem; font-weight: 600; color: var(--text-tertiary);
+  text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px;
+}
+.hero-card .value { font-size: 1.7rem; font-weight: 800; letter-spacing: -0.03em; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.hero-card .sub { font-size: 0.75rem; margin-top: 8px; font-weight: 500; }
+.hero-card .trend-icon {
+  position: absolute; right: 16px; bottom: 14px;
+  font-size: 1.6rem; opacity: 0.10; pointer-events: none;
+}
+/* Gold accent for key metrics */
+.hero-card.accent .value { color: var(--accent); }
+.hero-card.accent { border-color: rgba(212,168,67,0.20); background: linear-gradient(135deg, var(--surface) 80%, var(--accent-soft) 100%); }
+.hero-card.accent:hover { box-shadow: var(--shadow-gold); }
+/* Profit / Loss */
+.hero-card.up .value { color: var(--up); }
+.hero-card.up { border-color: rgba(255,77,79,0.18); background: linear-gradient(135deg, var(--surface) 80%, var(--up-soft) 100%); }
+.hero-card.down .value { color: var(--down); }
+.hero-card.down { border-color: rgba(59,204,108,0.18); background: linear-gradient(135deg, var(--surface) 80%, var(--down-soft) 100%); }
+
+/* ═══════════════════════════════════════════
+   Filter Bar — Game Tabs
+   ═══════════════════════════════════════════ */
+.filter-bar {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 20px; flex-wrap: wrap;
+}
+.filter-group {
+  display: flex; gap: 4px; flex-wrap: wrap;
+  background: var(--surface); border-radius: 24px;
+  padding: 4px; border: 1px solid var(--border);
+}
+.filter-pill {
+  padding: 7px 14px; border-radius: 20px;
+  border: none; background: transparent;
+  cursor: pointer; font-size: 0.8rem; font-weight: 500;
+  transition: all var(--transition); color: var(--text-secondary);
+  display: inline-flex; align-items: center; gap: 5px;
+  user-select: none;
+}
+.filter-pill:hover { color: var(--accent); background: var(--accent-soft); }
+.filter-pill.active {
+  background: var(--accent); color: #0D0F14; font-weight: 600;
+  box-shadow: 0 2px 8px var(--accent-glow);
+}
+.filter-pill .count {
+  font-size: 0.68rem; opacity: 0.65;
+  background: rgba(255,255,255,0.15); padding: 1px 6px; border-radius: 10px;
+}
+.filter-pill.active .count { background: rgba(0,0,0,0.15); }
+.filter-divider { width: 1px; height: 24px; background: var(--border); margin: 0 4px; }
+.sort-select {
+  padding: 7px 32px 7px 12px; border-radius: 20px;
+  border: 1px solid var(--border); background: var(--surface);
+  font-size: 0.8rem; color: var(--text-secondary);
+  appearance: none; cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%238B8FA3' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center;
+  transition: all var(--transition);
+}
+.sort-select:hover { border-color: var(--accent); color: var(--accent); }
+.sort-select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+
+.result-count { font-size: 0.8rem; color: var(--text-tertiary); margin-left: auto; }
+
+/* ═══════════════════════════════════════════
+   Card Grid — Showcase Display
+   ═══════════════════════════════════════════ */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 14px;
+}
+.card-item {
+  background: var(--surface); border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm); border: 1px solid var(--border);
+  overflow: hidden;
+  transition: all var(--transition); position: relative;
+}
+.card-item:hover {
+  box-shadow: var(--shadow-md), 0 0 0 1px var(--accent-medium);
+  transform: translateY(-2px); border-color: rgba(212,168,67,0.20);
+}
+.card-item.sold { opacity: 0.55; }
+.card-item.sold:hover { opacity: 0.75; }
+
+.card-item-inner { display: flex; padding: 14px; gap: 14px; }
+
+/* Card Image — Holographic border */
+.card-img-wrap {
+  width: 115px; height: 161px; flex-shrink: 0; border-radius: var(--radius-sm);
+  overflow: hidden; background: var(--bg-secondary);
+  display: flex; align-items: center; justify-content: center;
+  position: relative; cursor: pointer;
+  border: 1.5px solid var(--border-strong);
+  transition: border-color 0.3s ease;
+}
+.card-item:hover .card-img-wrap {
+  border-color: transparent;
+  background-image: linear-gradient(var(--bg-secondary), var(--bg-secondary)),
+    linear-gradient(135deg, var(--holo-start), var(--holo-mid), var(--holo-end), var(--holo-start));
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+}
+.card-img-wrap img {
+  width: 100%; height: 100%; object-fit: contain;
+  transition: transform 0.3s ease;
+}
+.card-item:hover .card-img-wrap img { transform: scale(1.04); }
+.no-img { font-size: 2.2rem; opacity: 0.15; }
+
+/* Decision stripe on left — wider, with glow */
+.card-stripe {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+  border-radius: 0 4px 4px 0;
+}
+.card-stripe.hold { background: var(--down); box-shadow: 0 0 8px var(--down-medium); }
+.card-stripe.consider { background: var(--warning); box-shadow: 0 0 8px rgba(232,146,58,0.2); }
+.card-stripe.sell { background: var(--up); box-shadow: 0 0 8px var(--up-medium); }
+.card-stripe.none { background: var(--text-tertiary); }
+
+/* Card Details */
+.card-details { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+.card-name-row {
+  display: flex; align-items: center; gap: 6px; cursor: pointer;
+}
+.card-name { font-weight: 700; font-size: 0.95rem; line-height: 1.3; flex: 1; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card-en-name { font-size: 0.7rem; color: var(--text-tertiary); line-height: 1.2; }
+
+.status-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+}
+.status-dot.holding { background: var(--down); box-shadow: 0 0 6px var(--down-medium); }
+.status-dot.sold { background: var(--text-tertiary); }
+
+.card-tags { display: flex; flex-wrap: wrap; gap: 4px; cursor: pointer; }
+.tag {
+  display: inline-flex; align-items: center;
+  padding: 2px 8px; border-radius: 5px;
+  font-size: 0.66rem; font-weight: 600; letter-spacing: 0.02em;
+}
+.tag-jp { background: rgba(190,24,93,0.12); color: #F472B6; }
+.tag-en { background: rgba(96,165,250,0.12); color: #60A5FA; }
+.tag-cs { background: rgba(251,191,36,0.12); color: #FBBF24; }
+.tag-psa { background: rgba(167,139,250,0.12); color: #A78BFA; }
+.tag-ace { background: rgba(212,168,67,0.12); color: #D4A843; }
+.tag-bgs { background: rgba(96,165,250,0.12); color: #60A5FA; }
+.tag-cgc { background: rgba(74,222,128,0.12); color: #4ADE80; }
+.tag-rarity { background: var(--accent-soft); color: var(--accent); }
+
+[data-theme="light"] .tag-jp { background: rgba(190,24,93,0.07); color: #BE185D; }
+[data-theme="light"] .tag-en { background: rgba(29,78,216,0.07); color: #1D4ED8; }
+[data-theme="light"] .tag-cs { background: rgba(180,83,9,0.07); color: #B45309; }
+[data-theme="light"] .tag-psa { background: rgba(124,58,237,0.07); color: #7C3AED; }
+[data-theme="light"] .tag-ace { background: rgba(184,134,11,0.07); color: #B8860B; }
+[data-theme="light"] .tag-bgs { background: rgba(29,78,216,0.07); color: #1D4ED8; }
+[data-theme="light"] .tag-cgc { background: rgba(22,163,74,0.07); color: #16A34A; }
+[data-theme="light"] .tag-rarity { background: rgba(184,134,11,0.07); color: #B8860B; }
+
+.card-series { font-size: 0.7rem; color: var(--text-tertiary); cursor: pointer; }
+
+/* Price Section — Side by side with clearer hierarchy */
+.card-prices {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+  margin-top: auto;
+}
+.price-block {
+  background: var(--bg-secondary); border-radius: 8px;
+  padding: 8px 10px; transition: all var(--transition);
+  cursor: default; position: relative;
+}
+/* 买入价可交互 */
+.price-block.editable {
+  cursor: pointer; border: 1.5px dashed var(--border-strong);
+  transition: all var(--transition);
+}
+.price-block.editable:hover {
+  border-color: var(--accent); background: var(--accent-soft);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.price-block.editable .edit-hint {
+  display: none; position: absolute; top: 3px; right: 5px;
+  font-size: 0.6rem; color: var(--accent); opacity: 0.8;
+}
+.price-block.editable:hover .edit-hint { display: block; }
+
+/* 缺失价格 — 更醒目 */
+.price-block.missing {
+  border: 1.5px dashed var(--accent);
+  background: var(--accent-soft);
+  cursor: pointer;
+  animation: gentlePulse 2.5s ease-in-out infinite;
+}
+.price-block.missing:hover {
+  background: var(--accent-medium);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.price-block.missing .missing-hint {
+  font-size: 0.64rem; color: var(--accent); font-weight: 600;
+  margin-top: 2px;
+}
+@keyframes gentlePulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.75; }
+}
+
+/* 内联编辑弹窗 — Fixed floating popover */
+.inline-edit-overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 900; background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
+  animation: overlayIn 0.15s ease;
+}
+@keyframes overlayIn { from { opacity: 0; } to { opacity: 1; } }
+
+.inline-edit-popup {
+  position: fixed; z-index: 910;
+  background: var(--surface-elevated); border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md); padding: 16px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.2);
+  min-width: 240px; max-width: 300px;
+  animation: popoverIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes popoverIn {
+  from { opacity: 0; transform: scale(0.92) translateY(-6px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+.inline-edit-popup .popup-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border);
+}
+.inline-edit-popup .popup-title {
+  font-size: 0.82rem; font-weight: 700; color: var(--accent);
+}
+.inline-edit-popup .popup-close {
+  width: 24px; height: 24px; border-radius: 6px; border: none;
+  background: var(--bg-secondary); cursor: pointer; color: var(--text-tertiary);
+  font-size: 0.85rem; display: flex; align-items: center; justify-content: center;
+  transition: all var(--transition);
+}
+.inline-edit-popup .popup-close:hover { background: var(--border-strong); color: var(--text-primary); }
+.inline-edit-popup label {
+  display: block; font-size: 0.72rem; font-weight: 600;
+  color: var(--text-secondary); margin-bottom: 4px;
+}
+.inline-edit-popup input {
+  width: 100%; padding: 9px 12px; border: 1px solid var(--border);
+  border-radius: 8px; font-size: 0.88rem; background: var(--bg-secondary);
+  color: var(--text-primary); outline: none; transition: all var(--transition);
+  margin-bottom: 10px;
+}
+.inline-edit-popup input:focus {
+  border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.inline-edit-popup .popup-actions {
+  display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px;
+}
+.inline-edit-popup .popup-btn {
+  padding: 8px 18px; border-radius: 8px; font-size: 0.82rem; font-weight: 600;
+  cursor: pointer; border: none; transition: all var(--transition);
+}
+.inline-edit-popup .popup-btn:active { transform: scale(0.96); }
+.popup-btn.save { background: var(--accent); color: #0D0F14; }
+.popup-btn.save:hover { opacity: 0.85; }
+.popup-btn.cancel { background: var(--bg-secondary); color: var(--text-secondary); }
+.popup-btn.cancel:hover { background: var(--border-strong); }
+
+.price-label { font-size: 0.66rem; color: var(--text-tertiary); margin-bottom: 2px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; }
+.price-value { font-size: 0.95rem; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.price-sub { font-size: 0.63rem; color: var(--text-tertiary); }
+
+/* P/L Row — Full-width signal bar */
+.pl-row {
+  display: flex; align-items: center; gap: 8px;
+  margin-top: 4px; padding-top: 6px; border-top: 1px solid var(--border);
+  cursor: pointer;
+}
+.pl-badge {
+  display: inline-flex; align-items: center;
+  padding: 3px 10px; border-radius: 5px;
+  font-size: 0.78rem; font-weight: 700; letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+.pl-badge.pos { background: var(--up-soft); color: var(--up); }
+.pl-badge.neg { background: var(--down-soft); color: var(--down); }
+.pl-badge.neu { background: var(--bg-secondary); color: var(--text-tertiary); }
+
+.decision-chip {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 3px 8px; border-radius: 5px;
+  font-size: 0.68rem; font-weight: 600;
+}
+.decision-chip.hold { background: var(--down-soft); color: var(--down); }
+.decision-chip.consider { background: var(--warning-soft); color: var(--warning); }
+.decision-chip.sell { background: var(--up-soft); color: var(--up); }
+.decision-chip.none { background: var(--bg-secondary); color: var(--text-tertiary); }
+
+.price-note { font-size: 0.63rem; color: var(--text-tertiary); font-style: italic; margin-top: 2px; }
+
+/* ═══════════════════════════════════════════
+   Empty State — Guided & Friendly
+   ═══════════════════════════════════════════ */
+.empty-state {
+  text-align: center; padding: 80px 20px; color: var(--text-tertiary);
+  background: var(--surface); border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm); border: 1px solid var(--border);
+  display: none;
+}
+.empty-state .icon { font-size: 4rem; margin-bottom: 16px; opacity: 0.5; }
+.empty-state h3 { font-size: 1.1rem; color: var(--text-secondary); margin-bottom: 8px; }
+.empty-state p { font-size: 0.85rem; max-width: 360px; margin: 0 auto; line-height: 1.6; }
+
+/* ═══════════════════════════════════════════
+   Modal — Premium Detail View
+   ═══════════════════════════════════════════ */
+.modal-overlay {
+  display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.6); z-index: 1000;
+  align-items: center; justify-content: center; padding: 20px;
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+.modal-overlay.active { display: flex; }
+.modal {
+  background: var(--surface-elevated); border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg); max-width: 680px; width: 100%;
+  max-height: 90vh; overflow-y: auto;
+  border: 1px solid var(--border-strong);
+  animation: modalIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.92) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+.modal-header {
+  padding: 18px 24px 0; display: flex; justify-content: space-between; align-items: center;
+}
+.modal-header h3 { font-size: 0.8rem; color: var(--accent); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
+.modal-header-actions { display: flex; align-items: center; gap: 8px; }
+.modal-close {
+  width: 32px; height: 32px; border-radius: 8px;
+  border: none; background: var(--bg-secondary); cursor: pointer;
+  color: var(--text-secondary); font-size: 1.1rem;
+  display: flex; align-items: center; justify-content: center;
+  transition: all var(--transition);
+}
+.modal-close:hover { background: var(--border-strong); color: var(--text-primary); }
+
+.modal-card-info {
+  display: flex; gap: 20px; padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+}
+.modal-card-img {
+  width: 130px; height: 182px; border-radius: var(--radius-sm);
+  overflow: hidden; flex-shrink: 0; background: var(--bg-secondary);
+  border: 1.5px solid var(--border-strong);
+}
+.modal-card-img img { width: 100%; height: 100%; object-fit: contain; }
+.modal-card-detail { flex: 1; min-width: 0; }
+.modal-card-detail .name { font-size: 1.1rem; font-weight: 700; letter-spacing: -0.02em; }
+.modal-card-detail .en-name { font-size: 0.78rem; color: var(--text-tertiary); margin-bottom: 12px; }
+.modal-meta-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; font-size: 0.8rem;
+}
+.meta-label { color: var(--text-tertiary); font-size: 0.72rem; }
+.meta-value { font-weight: 600; }
+
+.modal-section { padding: 16px 24px; border-bottom: 1px solid var(--border); }
+.modal-section:last-child { border-bottom: none; }
+.modal-section h3 {
+  font-size: 0.78rem; font-weight: 700; margin-bottom: 12px;
+  text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary);
+}
+
+/* Price table */
+.val-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; table-layout: fixed; }
+.val-table th {
+  text-align: left; padding: 10px 12px; font-size: 0.7rem;
+  color: var(--text-tertiary); font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-secondary);
+}
+.val-table th:nth-child(1) { width: 22%; }
+.val-table th:nth-child(2) { width: 32%; }
+.val-table th:nth-child(3) { width: 14%; }
+.val-table th:nth-child(4) { width: 32%; }
+.val-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); overflow: hidden; text-overflow: ellipsis; }
+.val-table td:nth-child(3) { white-space: nowrap; text-align: center; }
+.val-table tr:last-child td { border-bottom: none; }
+.val-table tr:hover td { background: var(--surface-hover); }
+.val-table .source-group-row td {
+  padding: 9px 12px; background: var(--bg-secondary); color: var(--accent);
+  font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+  border-top: 1px solid var(--border);
+}
+.source-tag {
+  display: inline-block; padding: 2px 8px; border-radius: 5px;
+  font-size: 0.68rem; font-weight: 600;
+}
+.source-tag.good { background: var(--down-soft); color: var(--down); }
+.source-tag.info { background: var(--accent-soft); color: var(--accent); }
+.source-tag.na { background: var(--bg-secondary); color: var(--text-tertiary); }
+.source-link {
+  color: var(--accent); text-decoration: none; font-weight: 600;
+  cursor: pointer; transition: all var(--transition);
+}
+.source-link:hover { text-decoration: underline; }
+.source-link .link-icon { font-size: 0.7em; opacity: 0.5; margin-left: 2px; }
+
+.val-logic {
+  background: var(--accent-soft); border: 1px solid rgba(212,168,67,0.15);
+  border-radius: var(--radius-sm); padding: 14px 16px;
+  font-size: 0.82rem; line-height: 1.6; margin-top: 12px;
+}
+[data-theme="light"] .val-logic {
+  background: rgba(184,134,11,0.05); border-color: rgba(184,134,11,0.12);
+}
+.val-logic .logic-title { font-weight: 700; margin-bottom: 4px; color: var(--accent); }
+.val-logic ul { margin: 8px 0 0; padding-left: 18px; }
+.val-logic li { margin-bottom: 4px; }
+.collector-insights {
+  display: grid; gap: 10px; margin-top: 12px;
+}
+.collector-group-title {
+  color: var(--accent); font-size: 0.72rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.06em; margin-top: 4px;
+}
+.collector-card {
+  background: var(--bg-secondary); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 12px;
+}
+.collector-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  font-size: 0.78rem; margin-bottom: 8px;
+}
+.collector-head strong { color: var(--accent); }
+.collector-meta {
+  color: var(--text-tertiary); font-size: 0.72rem; line-height: 1.5;
+}
+.collector-trend-chart {
+  width: 100%; height: 126px; display: block; margin: 8px 0 6px;
+  background: var(--surface); border-radius: 6px; border: 1px solid var(--border);
+}
+.collector-trend-chart .axis { stroke: var(--border-strong); stroke-width: 1; }
+.collector-trend-chart .grid { stroke: var(--border); stroke-width: 1; stroke-dasharray: 3 4; }
+.collector-trend-chart polyline { fill: none; stroke: var(--accent); stroke-width: 2.4; stroke-linejoin: round; stroke-linecap: round; }
+.collector-trend-chart circle { fill: var(--accent); }
+.collector-trend-chart text { fill: var(--text-tertiary); font-size: 9px; font-family: inherit; }
+.collector-trend-chart .axis-title { fill: var(--text-secondary); font-size: 10px; font-weight: 600; }
+.collector-sales {
+  display: grid; gap: 5px; margin-top: 8px; font-size: 0.74rem;
+}
+.collector-sale {
+  display: flex; justify-content: space-between; gap: 10px;
+  color: var(--text-secondary); border-top: 1px solid var(--border); padding-top: 5px;
+}
+.collector-links {
+  display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;
+}
+.collector-link-chip {
+  display: inline-flex; align-items: center; min-height: 28px;
+  padding: 5px 8px; border-radius: 6px; border: 1px solid var(--border);
+  color: var(--accent); background: var(--surface); text-decoration: none;
+  font-size: 0.72rem; font-weight: 600;
+}
+.collector-link-chip:hover { background: var(--surface-hover); }
+
+/* Modal Buttons */
+.modal-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 8px 16px; border-radius: 8px; font-size: 0.82rem; font-weight: 600;
+  cursor: pointer; transition: all var(--transition);
+  border: 1px solid transparent; outline: none;
+}
+.modal-btn:active { transform: scale(0.97); }
+.modal-btn-edit { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+.modal-btn-edit:hover { background: var(--accent); color: #0D0F14; }
+.modal-btn-save { background: var(--accent); color: #0D0F14; border-color: var(--accent); }
+.modal-btn-save:hover { opacity: 0.9; }
+.modal-btn-cancel { background: var(--bg-secondary); color: var(--text-secondary); border-color: var(--border); }
+.modal-btn-cancel:hover { background: var(--border-strong); }
+
+/* Edit Section */
+.modal-edit-section {
+  padding: 16px 24px; border-bottom: 1px solid var(--border);
+  background: var(--bg-secondary); animation: slideDown 0.25s ease;
+}
+@keyframes slideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+.edit-form { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; }
+.edit-field { display: flex; flex-direction: column; gap: 4px; }
+.edit-field label { font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); }
+.edit-field input {
+  width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px;
+  font-size: 0.88rem; background: var(--surface); transition: all var(--transition);
+  outline: none; color: var(--text-primary);
+}
+.edit-field input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.edit-actions { grid-column: 1 / -1; display: flex; gap: 8px; justify-content: flex-end; padding-top: 4px; }
+
+/* ═══════════════════════════════════════════
+   Footer
+   ═══════════════════════════════════════════ */
+.footer {
+  text-align: center; padding: 24px; font-size: 0.72rem; color: var(--text-tertiary);
+  border-top: 1px solid var(--border); margin-top: 32px;
+}
+
+/* ═══════════════════════════════════════════
+   Responsive
+   ═══════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .hero-stats { grid-template-columns: repeat(2, 1fr); }
+  .card-grid { grid-template-columns: 1fr; }
+  .filter-bar { gap: 8px; }
+  .modal-card-info { flex-direction: column; align-items: center; text-align: center; }
+  .modal-meta-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 480px) {
+  .container { padding: 16px; }
+  .hero-stats { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .hero-card .value { font-size: 1.3rem; }
+  .card-grid { grid-template-columns: 1fr; }
+}
+
+/* ═══════════════════════════════════════════
+   Skeleton Loading
+   ═══════════════════════════════════════════ */
+.skeleton {
+  background: linear-gradient(90deg, var(--bg-secondary) 25%, var(--surface-hover) 50%, var(--bg-secondary) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 6px;
+}
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+.skeleton-card { height: 200px; border-radius: var(--radius-md); }
+.skeleton-stat { height: 100px; border-radius: var(--radius-md); }
+
+/* ═══════════════════════════════════════════
+   Toast Notification
+   ═══════════════════════════════════════════ */
+.toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+  padding: 12px 24px; border-radius: 12px;
+  background: var(--accent); color: #0D0F14;
+  font-size: 0.85rem; font-weight: 600;
+  box-shadow: var(--shadow-lg); z-index: 2000;
+  opacity: 0; transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ═══════════════════════════════════════════
+   Scrollbar
+   ═══════════════════════════════════════════ */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-tertiary); }
+
+/* ═══════════════════════════════════════════
+   Ambient Background — Subtle Grid
+   ═══════════════════════════════════════════ */
+body::before {
+  content: '';
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background-image:
+    radial-gradient(circle at 20% 20%, rgba(212,168,67,0.03) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(96,165,250,0.02) 0%, transparent 50%);
+  pointer-events: none; z-index: -1;
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-left">
+    <div class="header-logo">🃏</div>
+    <div>
+      <h1>TCG 持仓看板</h1>
+      <div class="header-subtitle">实时追踪 · 智能估值</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <span id="lastUpdate" class="update-pill">
+      <span class="update-dot"></span>
+      加载中...
+    </span>
+    <button class="theme-toggle" onclick="toggleTheme()" title="切换深色/浅色模式" id="themeBtn">☀️</button>
+  </div>
+</div>
+
+<!-- Main -->
+<div class="container">
+
+  <!-- Hero Stats -->
+  <div class="hero-stats" id="heroStats">
+    <div class="hero-card skeleton skeleton-stat"></div>
+    <div class="hero-card skeleton skeleton-stat"></div>
+    <div class="hero-card skeleton skeleton-stat"></div>
+    <div class="hero-card skeleton skeleton-stat"></div>
+  </div>
+
+  <!-- Filter Bar -->
+  <div class="filter-bar" id="filterBar" style="display:none;">
+    <div class="filter-group" id="gameTabs">
+      <button class="filter-pill active" data-game="all">全部 <span class="count" id="tab-all">0</span></button>
+      <button class="filter-pill" data-game="pokemon">🎴 宝可梦 <span class="count" id="tab-pokemon">0</span></button>
+      <button class="filter-pill" data-game="yugioh">🎮 游戏王 <span class="count" id="tab-yugioh">0</span></button>
+      <button class="filter-pill" data-game="onepiece">🏴‍☠️ OP <span class="count" id="tab-onepiece">0</span></button>
+      <button class="filter-pill" data-game="conan">🔍 柯南 <span class="count" id="tab-conan">0</span></button>
+    </div>
+    <div class="filter-divider"></div>
+    <select id="sortSelect" class="sort-select">
+      <option value="default">默认排序</option>
+      <option value="hasPrice">有价优先</option>
+      <option value="gainDesc">涨幅最高</option>
+      <option value="gainAsc">涨幅最低</option>
+      <option value="buyDesc">买入价高→低</option>
+      <option value="gradeDesc">评级高→低</option>
+    </select>
+    <span class="result-count" id="resultCount"></span>
+  </div>
+
+  <!-- Card Grid -->
+  <div class="card-grid" id="cardGrid">
+    <div class="skeleton skeleton-card"></div>
+    <div class="skeleton skeleton-card"></div>
+    <div class="skeleton skeleton-card"></div>
+    <div class="skeleton skeleton-card"></div>
+  </div>
+
+  <!-- Empty State -->
+  <div class="empty-state" id="emptyState">
+    <div class="icon">📦</div>
+    <h3>暂无持仓数据</h3>
+    <p>在聊天中告诉我你的卡牌持仓，我会自动帮你记录和追踪价格变化</p>
+  </div>
+</div>
+
+<!-- Footer -->
+<div class="footer">
+  数据更新: <span id="footerTime">--</span> · 价格仅供参考，不构成投资建议
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>估值详情</h3>
+      <div class="modal-header-actions">
+        <button id="editBtn" class="modal-btn modal-btn-edit">✏️ 编辑</button>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+    </div>
+    <div class="modal-card-info" id="modalCardInfo"></div>
+    <div class="modal-edit-section" id="modalEditSection" style="display:none;"></div>
+    <div class="modal-section" id="modalPriceTable"></div>
+    <div class="modal-section" id="modalLogic"></div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════
+   State
+   ═══════════════════════════════════════════ */
+var portfolio = null;
+var activeGame = 'all';
+
+/* ═══════════════════════════════════════════
+   Theme — Default dark (trading room), with manual override
+   ═══════════════════════════════════════════ */
+function applyTheme(dark) {
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  document.getElementById('themeBtn').textContent = dark ? '☀️' : '🌙';
+}
+function toggleTheme() {
+  var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  var next = !isDark;
+  applyTheme(next);
+  try { localStorage.setItem('tcg-theme-override', next ? 'dark' : 'light'); } catch(e){}
+}
+(function() {
+  try {
+    // 1) 用户手动覆盖优先
+    var override = localStorage.getItem('tcg-theme-override');
+    if (override) { applyTheme(override === 'dark'); return; }
+    // 2) 默认暗色（交易室风格）
+    applyTheme(true);
+  } catch(e){ applyTheme(true); }
+})();
+
+/* ═══════════════════════════════════════════
+   Toast
+   ═══════════════════════════════════════════ */
+var toastTimer = null;
+function showToast(msg) {
+  var el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function() { el.classList.remove('show'); }, 2500);
+}
+
+/* ═══════════════════════════════════════════
+   Init
+   ═══════════════════════════════════════════ */
+async function init() {
+  // 带重试的数据加载：服务器可能还没启动完，最多重试5次
+  var maxRetries = 5;
+  var retryDelay = 1500;
+  for (var attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      var resp = await fetch('/data/portfolio.json');
+      if (!resp.ok) {
+        resp = await fetch('/data/portfolio.example.json');
+      }
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      var text = await resp.text();
+      portfolio = JSON.parse(text);
+      try { render(); } catch (re) {
+        console.error('render error', re);
+        try {
+          document.getElementById('emptyState').style.display = 'block';
+          document.getElementById('cardGrid').innerHTML = '';
+        } catch(e){}
+        showToast('页面渲染出错，请查看控制台');
+      }
+      return; // 成功，退出
+    } catch(e) {
+      console.warn('数据加载失败 (第' + attempt + '/' + maxRetries + '次)', e.message || e);
+      if (attempt < maxRetries) {
+        // 显示加载提示
+        try {
+          var el = document.getElementById('emptyState');
+          if (el) { el.style.display = 'block'; el.innerHTML = '<div style="font-size:1.2em;margin-bottom:8px">⏳ 正在连接服务器...</div><div style="color:var(--text-muted)">第 ' + attempt + ' 次重试中</div>'; }
+        } catch(ex){}
+        await new Promise(function(r) { setTimeout(r, retryDelay); });
+      } else {
+        console.error(e);
+        try {
+          document.getElementById('emptyState').style.display = 'block';
+          document.getElementById('cardGrid').innerHTML = '';
+          document.getElementById('heroStats').innerHTML = '';
+          showToast('无法连接服务器，请确认服务已启动');
+        } catch(e){}
+      }
+    }
+  }
+}
+
+window.addEventListener('error', function(ev) {
+  console.error('Uncaught error', ev.error || ev.message || ev);
+  try { document.getElementById('emptyState').style.display = 'block'; } catch(e){}
+});
+
+/* ═══════════════════════════════════════════
+   Helpers
+   ═══════════════════════════════════════════ */
+function cnyPrice(card) {
+  var p = card.current_prices || {};
+  var grading = card.grading || {};
+  var grader = (grading.grader || '').toUpperCase();
+  var grade = grading.grade || 0;
+
+  // 1. 镖卡对应评级成交价
+  // 注意: ACE卡查的是PSA10数据，需要折扣
+  if (p.biaoka_latest_sold_cny != null && p.biaoka_latest_sold_cny > 0) {
+    var soldGrade = (p.biaoka_latest_sold_grade || '').toUpperCase();
+    var needDiscount = false;
+    // 如果卡是ACE但成交价是PSA10的
+    if (grader === 'ACE' && soldGrade.indexOf('PSA 10') >= 0) needDiscount = true;
+    if (needDiscount) return Math.round(p.biaoka_latest_sold_cny * 0.30);
+    return p.biaoka_latest_sold_cny;
+  }
+
+  // 2. 镖卡PSA10估值 * 评级折扣系数
+  if (p.biaoka_psa10_cny != null && p.biaoka_psa10_cny > 0) {
+    var discount = 1.0;
+    if (grader === 'PSA') {
+      if (grade === 10) discount = 1.0;
+      else if (grade === 9) discount = 0.35;
+      else if (grade === 8) discount = 0.18;
+      else discount = 0.12;
+    } else if (grader === 'ACE') {
+      discount = 0.30; // ACE10 ≈ PSA10 * 0.30
+    }
+    return Math.round(p.biaoka_psa10_cny * discount);
+  }
+
+  // 3. 卡淘 (仅当价格合理时 - 评级卡一般>¥100)
+  if (p.cardhobby_cny != null && p.cardhobby_cny > 100) return p.cardhobby_cny;
+
+  // 4. ACE10估值
+  if (p.ace10_estimated_cny != null) return p.ace10_estimated_cny;
+
+  // 5. USD * 汇率
+  if (p.ebay_usd != null) return Math.round(p.ebay_usd * 7.2);
+  if (p.tcgapi_usd != null) return Math.round(p.tcgapi_usd * 7.2);
+  if (p.pokemonpricetracker_usd != null) return Math.round(p.pokemonpricetracker_usd * 7.2);
+  return null;
+}
+function buyPrice(card) {
+  var txs = card.transactions || []; var sum = 0;
+  for (var i = 0; i < txs.length; i++) { if (txs[i].type === 'buy') sum += txs[i].price_cny || 0; }
+  return sum;
+}
+function priceSource(card) {
+  var p = card.current_prices || {};
+  var grading = card.grading || {};
+  var grader = (grading.grader || '').toUpperCase();
+  var grade = grading.grade || 0;
+
+  if (p.biaoka_latest_sold_cny != null && p.biaoka_latest_sold_cny > 0) {
+    var soldGrade = (p.biaoka_latest_sold_grade || '').toUpperCase();
+    // ACE卡看到的是PSA10成交价再打折，不是真实ACE成交
+    if (grader === 'ACE' && soldGrade.indexOf('PSA 10') >= 0) return 'PSA10×0.30';
+    return '镖卡成交';
+  }
+  if (p.biaoka_psa10_cny != null && p.biaoka_psa10_cny > 0) {
+    if (grader === 'PSA' && grade === 10) return '镖卡估值';
+    if (grader === 'PSA' && grade === 9) return 'PSA10×0.35';
+    if (grader === 'PSA' && grade === 8) return 'PSA10×0.18';
+    if (grader === 'ACE') return 'PSA10×0.30';
+    return '镖卡估值';
+  }
+  if (p.cardhobby_cny != null && p.cardhobby_cny > 100) return '卡淘';
+  if (p.ace10_estimated_cny != null) return 'AI估值';
+  if (p.ebay_usd != null) return 'eBay';
+  if (p.tcgapi_usd != null) return 'TCG API';
+  if (p.pokemonpricetracker_usd != null) return 'PriceTracker';
+  return '';
+}
+function gradingTag(card) {
+  var g = card.grading;
+  if (g) return '<span class="tag tag-' + g.grader.toLowerCase() + '">' + (g.label || g.grader + ' ' + g.grade) + '</span>';
+  if (card.psa_grade) return '<span class="tag tag-psa">PSA ' + card.psa_grade + '</span>';
+  return '';
+}
+function gameName(g) {
+  if (g === 'pokemon') return '宝可梦';
+  if (g === 'yugioh') return '游戏王';
+  if (g === 'onepiece') return 'One Piece';
+  if (g === 'conan') return '柯南';
+  return g;
+}
+function langName(l) {
+  if (l === 'jp') return '日版';
+  if (l === 'en') return '美版';
+  if (l === 'cs') return '简中';
+  return l;
+}
+function escapeHtml(s) {
+  return String(s === null || s === undefined ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+function decisionInfo(card, profitPct) {
+  if (card.status === 'sold') return { cls: 'none', text: '已售', emoji: '' };
+  if (cnyPrice(card) == null) return { cls: 'none', text: '待更新', emoji: '⏳' };
+  if (profitPct >= 50) return { cls: 'hold', text: '持有', emoji: '🟢' };
+  if (profitPct >= 20) return { cls: 'consider', text: '可出手', emoji: '🟡' };
+  if (profitPct < -20) return { cls: 'sell', text: '止损', emoji: '🔴' };
+  if (profitPct >= 0) return { cls: 'hold', text: '持有', emoji: '🟢' };
+  return { cls: 'consider', text: '观望', emoji: '🟡' };
+}
+
+function trendValue(point) {
+  if (point == null) return null;
+  if (typeof point === 'number') return isFinite(point) ? point : null;
+  var raw = point.value;
+  if (raw == null) raw = point.price_cny;
+  if (raw == null) raw = point.amount;
+  if (raw == null) raw = point.price;
+  if (raw == null) raw = point.avg;
+  var n = Number(raw);
+  return isFinite(n) ? n : null;
+}
+
+function formatTrendDate(ms) {
+  var d = new Date(ms);
+  if (!isFinite(d.getTime())) return '';
+  return String(d.getMonth() + 1).padStart(2, '0') + '/' + String(d.getDate()).padStart(2, '0');
+}
+
+function normalizeTrendPoints(points, fetchedAt) {
+  var rawRows = [];
+  var fallbackBase = Date.parse(fetchedAt || '');
+  var maxIndex = 0;
+  points = points || [];
+  for (var i = 0; i < points.length; i++) {
+    var p = points[i];
+    var value = trendValue(p);
+    if (value == null) continue;
+    var rawTime = p && typeof p === 'object' ? (p.time || p.date || p.day || p.timestamp || p.fetched_at || p.x) : null;
+    var parsedTime = Date.parse(rawTime || '');
+    var index = p && typeof p === 'object' && p.index != null ? Number(p.index) : i;
+    if (!isFinite(index)) index = i;
+    if (index > maxIndex) maxIndex = index;
+    rawRows.push({ value: value, timeMs: isFinite(parsedTime) ? parsedTime : null, index: index, order: i });
+  }
+  for (var r = 0; r < rawRows.length; r++) {
+    if (rawRows[r].timeMs == null && isFinite(fallbackBase) && rawRows.length > 1) {
+      rawRows[r].timeMs = fallbackBase - (maxIndex - rawRows[r].index) * 86400000;
+      rawRows[r].timeInferred = true;
+    }
+    if (rawRows[r].timeMs == null) {
+      rawRows[r].timeMs = rawRows[r].index;
+      rawRows[r].indexFallback = true;
+    }
+  }
+  rawRows.sort(function(a, b) {
+    if (a.timeMs === b.timeMs) return a.order - b.order;
+    return a.timeMs - b.timeMs;
+  });
+  return rawRows;
+}
+
+function renderTrendChart(points, fetchedAt) {
+  var rows = normalizeTrendPoints(points, fetchedAt);
+  if (rows.length < 2) return '';
+  var values = rows.map(function(p) { return p.value; });
+  var times = rows.map(function(p) { return p.timeMs; });
+  var min = Math.min.apply(null, values);
+  var max = Math.max.apply(null, values);
+  var minTime = Math.min.apply(null, times);
+  var maxTime = Math.max.apply(null, times);
+  var ySpan = max - min || 1;
+  var xSpan = maxTime - minTime || 1;
+  var w = 420, h = 126;
+  var left = 46, right = 14, top = 14, bottom = 30;
+  var plotW = w - left - right;
+  var plotH = h - top - bottom;
+  var xy = rows.map(function(row) {
+    var x = left + ((row.timeMs - minTime) / xSpan) * plotW;
+    var y = top + plotH - ((row.value - min) / ySpan) * plotH;
+    return [Math.round(x * 10) / 10, Math.round(y * 10) / 10];
+  });
+  var poly = xy.map(function(p) { return p[0] + ',' + p[1]; }).join(' ');
+  var last = xy[xy.length - 1];
+  var indexAxis = rows.every(function(row) { return row.indexFallback; });
+  var startLabel = indexAxis ? ('点' + (rows[0].index + 1)) : formatTrendDate(minTime);
+  var endLabel = indexAxis ? ('点' + (rows[rows.length - 1].index + 1)) : formatTrendDate(maxTime);
+  var inferred = rows.some(function(row) { return row.timeInferred; });
+  return '<svg class="collector-trend-chart" viewBox="0 0 ' + w + ' ' + h + '" aria-label="collector trend: time x-axis, value y-axis">'
+    + '<line class="grid" x1="' + left + '" y1="' + top + '" x2="' + (w - right) + '" y2="' + top + '"></line>'
+    + '<line class="grid" x1="' + left + '" y1="' + (top + plotH / 2) + '" x2="' + (w - right) + '" y2="' + (top + plotH / 2) + '"></line>'
+    + '<line class="axis" x1="' + left + '" y1="' + top + '" x2="' + left + '" y2="' + (h - bottom) + '"></line>'
+    + '<line class="axis" x1="' + left + '" y1="' + (h - bottom) + '" x2="' + (w - right) + '" y2="' + (h - bottom) + '"></line>'
+    + '<polyline points="' + poly + '"></polyline>'
+    + '<circle cx="' + last[0] + '" cy="' + last[1] + '" r="3.2"></circle>'
+    + '<text x="4" y="' + (top + 4) + '">¥' + Math.round(max).toLocaleString() + '</text>'
+    + '<text x="4" y="' + (h - bottom + 3) + '">¥' + Math.round(min).toLocaleString() + '</text>'
+    + '<text class="axis-title" x="' + (left + plotW / 2 - 12) + '" y="' + (h - 5) + '">时间</text>'
+    + '<text class="axis-title" x="4" y="' + (top + plotH / 2 + 4) + '">value</text>'
+    + '<text x="' + left + '" y="' + (h - 18) + '">' + escapeHtml(startLabel) + '</text>'
+    + '<text x="' + (w - right - 42) + '" y="' + (h - 18) + '">' + escapeHtml(endLabel) + '</text>'
+    + '</svg>'
+    + '<div class="collector-meta">x轴: 时间' + (inferred ? '（由采集时间推算）' : '') + ' · y轴: value · 范围 ¥' + Math.round(min).toLocaleString() + ' - ¥' + Math.round(max).toLocaleString() + ' · ' + rows.length + ' 个点</div>';
+}
+
+function sourceGroupLabel(group) {
+  if (group === 'jp') return '日版参考';
+  if (group === 'us') return '美版参考';
+  if (group === 'cn') return '国内参考';
+  return '其他来源';
+}
+
+function primaryGroupForCard(card) {
+  var lang = (card && card.language || '').toLowerCase();
+  if (lang === 'jp' || lang === 'ja' || lang === 'jpn') return 'jp';
+  if (lang === 'en') return 'us';
+  return 'cn';
+}
+
+function sourceGroupOrder(card) {
+  var first = primaryGroupForCard(card);
+  var base = ['jp', 'us', 'cn', 'other'];
+  return [first].concat(base.filter(function(g) { return g !== first; }));
+}
+
+function inferCollectorGroup(row, card) {
+  if (row.market_group) return row.market_group;
+  var source = row.source || '';
+  if (source === 'jihuanshe' || source === 'pricecharting_jp' || source === 'jp_market_reference' || source === 'cardmarket_jp') return 'jp';
+  if (source === 'biaoka' || source === 'tcgpricelookup' || source === 'pokeprice' || source === 'serpapi_ebay') return 'us';
+  if (source === 'cardhobby' || source === 'xianyu') return 'cn';
+  return primaryGroupForCard(card);
+}
+
+function collectorStatusClass(row) {
+  if (row.status === 'ok') return row.confidence === 'low' ? 'info' : 'good';
+  if (row.status === 'reference_only') return 'info';
+  return 'na';
+}
+
+function shouldShowCollectorRow(row, card) {
+  if (!row || row.status === 'skipped') return false;
+  var group = inferCollectorGroup(row, card || {});
+  var primary = primaryGroupForCard(card || {});
+  if (group === primary) return true;
+  return row.status === 'ok' || row.status === 'reference_only';
+}
+
+function collectorSourceUrl(row) {
+  var raw = row.raw_ref || {};
+  var payload = raw.payload || {};
+  if (payload.product_url) return payload.product_url;
+  if (raw.links && raw.links.length) return raw.links[0].url;
+  if (row.source === 'biaoka') return 'https://app.biucards.com/';
+  if (row.source === 'jihuanshe') return 'https://h5.jihuanshe.com/';
+  if (row.source === 'pricecharting_jp') return 'https://www.pricecharting.com/';
+  if (row.source === 'cardhobby') return 'https://www.cardhobby.com/';
+  if (row.source === 'serpapi_ebay') return 'https://www.ebay.com/';
+  return '';
+}
+
+function renderCollectorLinks(raw) {
+  var links = (raw || {}).links || [];
+  if (!links.length) return '';
+  var html = '<div class="collector-links">';
+  for (var i = 0; i < Math.min(links.length, 8); i++) {
+    var link = links[i] || {};
+    if (!link.url) continue;
+    html += '<a class="collector-link-chip" href="' + escapeHtml(link.url) + '" target="_blank" rel="noreferrer noopener">' + escapeHtml(link.label || link.kind || '验证') + '</a>';
+  }
+  html += '</div>';
+  return html;
+}
+
+function renderCollectorInsights(prices, card) {
+  var rows = (prices || {}).collector_sources || [];
+  if (!rows.length) return '';
+  var html = '<div class="collector-insights">';
+  var order = sourceGroupOrder(card || {});
+  for (var g = 0; g < order.length; g++) {
+    var group = order[g];
+    var groupRows = rows.filter(function(row) {
+      return inferCollectorGroup(row || {}, card || {}) === group && shouldShowCollectorRow(row || {}, card || {});
+    });
+    if (!groupRows.length) continue;
+    html += '<div class="collector-group-title">' + sourceGroupLabel(group) + '</div>';
+    for (var i = 0; i < groupRows.length; i++) {
+      var r = groupRows[i] || {};
+      var current = r.price_current || {};
+      var raw = r.raw_ref || {};
+      var statusClass = collectorStatusClass(r);
+      var currentText = current.amount != null ? '¥' + Number(current.amount).toLocaleString() : '--';
+      var meta = [];
+      if (r.confidence && r.confidence !== 'none' && r.confidence !== 'reference') meta.push('置信度 ' + r.confidence);
+      if (raw.matched_serial) meta.push('#' + raw.matched_serial);
+      if (raw.grade_key) meta.push(String(raw.grade_key).toUpperCase());
+      if (raw.links && raw.links.length) meta.push(raw.links.length + '个核验入口');
+      if (r.message && r.message !== 'collected') meta.push(r.message);
+      html += '<div class="collector-card">'
+        + '<div class="collector-head"><strong>' + escapeHtml(r.source || 'collector') + '</strong><span class="source-tag ' + statusClass + '">' + escapeHtml(r.status || '--') + '</span></div>'
+        + '<div class="collector-meta">当前参考价 <strong style="color:var(--text-primary)">' + escapeHtml(currentText) + '</strong>' + (meta.length ? ' · ' + escapeHtml(meta.join(' · ')) : '') + '</div>';
+      html += renderTrendChart(r.price_history || [], r.fetched_at);
+      html += renderCollectorLinks(raw);
+      var sales = (r.sold_records || []).slice(0, 3);
+      if (sales.length) {
+        html += '<div class="collector-sales">';
+        for (var s = 0; s < sales.length; s++) {
+          var sale = sales[s] || {};
+          html += '<div class="collector-sale"><span>' + escapeHtml((sale.market || '成交') + ' ' + (sale.sold_at || '').substring(0, 10)) + '</span><strong>¥' + Number(sale.price_cny || 0).toLocaleString() + '</strong></div>';
+        }
+        html += '</div>';
+      }
+      html += '</div>';
+    }
+  }
+  html += '</div>';
+  return html;
+}
+
+function inferPriceSourceGroup(source, card) {
+  if (source.group) return source.group;
+  var name = source.name || '';
+  if (name.indexOf('日版') >= 0 || name.indexOf('集换社') >= 0 || name.indexOf('PriceCharting JP') >= 0) return 'jp';
+  if (name.indexOf('tcgapi') >= 0 || name.indexOf('eBay') >= 0 || name.indexOf('TCGPrice') >= 0 || name.indexOf('PokemonPrice') >= 0 || name.indexOf('PSA') >= 0 || name.indexOf('ACE') >= 0 || name.indexOf('裸卡') >= 0) return 'us';
+  if (name.indexOf('卡淘') >= 0 || name.indexOf('闲鱼') >= 0 || name.indexOf('镖卡') >= 0 || name.indexOf('BiuCard') >= 0) return 'cn';
+  return primaryGroupForCard(card);
+}
+
+function shouldShowPriceSource(source, card) {
+  var primary = primaryGroupForCard(card);
+  var group = inferPriceSourceGroup(source, card);
+  if (source.alwaysShow) return true;
+  if (source.status !== 'na') return true;
+  return group === primary;
+}
+
+function renderSourceName(source) {
+  if (source.url && source.cleanOpen) {
+    return '<a class="source-link" href="javascript:void(0)" onclick="event.stopPropagation(); cleanOpenUrl(\'' + source.url.replace(/'/g, "\\'") + '\')" title="点击跳转验证（无痕模式）">' + escapeHtml(source.name) + '<span class="link-icon">🔗</span></a>';
+  }
+  if (source.url) {
+    return '<a class="source-link" href="' + source.url + '" target="_blank" rel="noreferrer noopener" title="点击跳转验证">' + escapeHtml(source.name) + '<span class="link-icon">🔗</span></a>';
+  }
+  return '<strong>' + escapeHtml(source.name) + '</strong>';
+}
+
+/* ═══════════════════════════════════════════
+   Render
+   ═══════════════════════════════════════════ */
+function render() {
+  var c = portfolio.cards;
+  if (!c || c.length === 0) {
+    document.getElementById('cardGrid').innerHTML = '';
+    document.getElementById('emptyState').style.display = 'block';
+    return;
+  }
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('filterBar').style.display = 'flex';
+
+  // Bind sort once
+  var sortEl = document.getElementById('sortSelect');
+  if (sortEl && !sortEl._bound) {
+    sortEl.addEventListener('change', function() { render(); });
+    sortEl._bound = true;
+  }
+
+  var filtered = activeGame === 'all' ? c : c.filter(function(x) { return x.game === activeGame; });
+  if (filtered.length === 0) {
+    document.getElementById('cardGrid').innerHTML = '';
+    document.getElementById('emptyState').style.display = 'block';
+    updateStats([]); updateTabs(); updateTime();
+    return;
+  }
+
+  var sortMode = (document.getElementById('sortSelect') && document.getElementById('sortSelect').value) || 'default';
+  filtered = sortCards(filtered, sortMode);
+
+  updateStats(filtered);
+  updateTabs();
+  renderCards(filtered);
+  updateTime();
+}
+
+function updateStats(cards) {
+  var invested = 0, currentVal = 0, priced = 0;
+  for (var i = 0; i < cards.length; i++) {
+    invested += buyPrice(cards[i]);
+    if (cards[i].status === 'holding') {
+      var p = cnyPrice(cards[i]);
+      if (p != null) { currentVal += p; priced++; }
+    }
+  }
+  var unrealized = currentVal - invested;
+  var pct = invested > 0 ? (unrealized / invested * 100) : 0;
+
+  var holding = 0, sold = 0, realizedPL = 0;
+  for (var i = 0; i < cards.length; i++) {
+    var c = cards[i];
+    if (c.status === 'holding') holding++;
+    else if (c.status === 'sold') {
+      sold++;
+      var b = 0, s = 0; var txs = c.transactions || [];
+      for (var j = 0; j < txs.length; j++) {
+        if (txs[j].type === 'buy') b += txs[j].price_cny || 0;
+        if (txs[j].type === 'sell') s += txs[j].price_cny || 0;
+      }
+      realizedPL += s - b;
+    }
+  }
+
+  // Determine card accent classes
+  var ulCls = unrealized > 0 ? 'up' : unrealized < 0 ? 'down' : '';
+  var rlCls = realizedPL > 0 ? 'up' : realizedPL < 0 ? 'down' : '';
+
+  var html = '';
+  html += '<div class="hero-card"><div class="label">总投入</div><div class="value">¥' + invested.toLocaleString() + '</div><div class="sub" style="color:var(--text-tertiary)">' + cards.length + ' 张 · ' + holding + ' 持有</div><div class="trend-icon">💰</div></div>';
+  html += '<div class="hero-card accent"><div class="label">当前估值</div><div class="value">¥' + currentVal.toLocaleString() + '</div><div class="sub" style="color:var(--text-tertiary)">' + priced + ' 张有价</div><div class="trend-icon">📊</div></div>';
+  html += '<div class="hero-card ' + ulCls + '"><div class="label">未实现盈亏</div><div class="value">' + (unrealized >= 0 ? '+' : '') + '¥' + unrealized.toLocaleString() + '</div><div class="sub" style="color:' + (pct > 0 ? 'var(--up)' : pct < 0 ? 'var(--down)' : 'var(--text-tertiary)') + '">' + (pct >= 0 ? '+' : '') + pct.toFixed(1) + '%</div><div class="trend-icon">' + (unrealized >= 0 ? '📈' : '📉') + '</div></div>';
+  html += '<div class="hero-card ' + rlCls + '"><div class="label">已实现盈亏</div><div class="value">' + (realizedPL >= 0 ? '+' : '') + '¥' + realizedPL.toLocaleString() + '</div><div class="sub" style="color:var(--text-tertiary)">' + sold + ' 张已售</div><div class="trend-icon">🏷️</div></div>';
+
+  document.getElementById('heroStats').innerHTML = html;
+}
+
+function renderCards(cards) {
+  var grid = document.getElementById('cardGrid');
+  var html = '';
+  for (var i = 0; i < cards.length; i++) {
+    var c = cards[i];
+    var bp = buyPrice(c);
+    var cp = cnyPrice(c);
+    var profit = cp != null ? cp - bp : null;
+    var pct = bp > 0 && cp != null ? (profit / bp * 100) : null;
+    var src = priceSource(c);
+    var isSold = c.status === 'sold';
+    var pcls = profit != null ? (profit > 0 ? 'pos' : profit < 0 ? 'neg' : 'neu') : '';
+    var di = decisionInfo(c, pct);
+    var noBuyPrice = bp === 0;
+
+    var refs = '';
+    var p = c.current_prices || {};
+    if (p.psa10_usd || p.psa9_usd) {
+      var ref = [];
+      if (p.psa10_usd) ref.push('PSA10 $' + p.psa10_usd);
+      if (p.psa9_usd) ref.push('PSA9 $' + p.psa9_usd);
+      if (p.raw_usd) ref.push('Raw $' + p.raw_usd);
+      refs = '<div class="price-note">参考: ' + ref.join(' / ') + '</div>';
+    }
+    if (p.price_note) refs += '<div class="price-note">' + p.price_note + '</div>';
+
+    // Card click → modal, but price blocks have their own click handlers
+    html += '<div class="card-item' + (isSold ? ' sold' : '') + '" data-id="' + c.id + '">';
+    html += '<div class="card-stripe ' + di.cls + '"></div>';
+    html += '<div class="card-item-inner">';
+    html += '<div class="card-img-wrap" onclick="showModal(\'' + c.id + '\')">';
+    if (c.image_url) {
+      html += '<img src="' + c.image_url + '" alt="" loading="lazy">';
+    } else {
+      html += '<div class="no-img">🃏</div>';
+    }
+    html += '</div>';
+
+    html += '<div class="card-details">';
+    html += '<div class="card-name-row" onclick="showModal(\'' + c.id + '\')"><div class="card-name">' + (c.name_cn || c.name_en || '未知') + '</div><span class="status-dot ' + c.status + '"></span></div>';
+    if (c.name_en && c.name_en !== c.name_cn) html += '<div class="card-en-name" onclick="showModal(\'' + c.id + '\')">' + c.name_en + '</div>';
+
+    html += '<div class="card-tags" onclick="showModal(\'' + c.id + '\')">';
+    html += '<span class="tag tag-' + c.language + '">' + langName(c.language) + '</span>';
+    if (c.rarity) html += '<span class="tag tag-rarity">' + c.rarity + '</span>';
+    html += gradingTag(c) + '</div>';
+
+    if (c.series) html += '<div class="card-series" onclick="showModal(\'' + c.id + '\')">' + c.series + (c.card_number ? ' · ' + c.card_number : '') + '</div>';
+
+    html += '<div class="card-prices">';
+    // 买入价 — 可交互
+    if (noBuyPrice) {
+      html += '<div class="price-block missing" onclick="event.stopPropagation(); inlineEditBuyPrice(\'' + c.id + '\', this)">';
+      html += '<div class="price-label">买入</div>';
+      html += '<div class="price-value">--</div>';
+      html += '<div class="missing-hint">✏️ 点击录入</div>';
+      html += '</div>';
+    } else {
+      html += '<div class="price-block editable" onclick="event.stopPropagation(); inlineEditBuyPrice(\'' + c.id + '\', this)">';
+      html += '<div class="price-label">买入</div>';
+      html += '<div class="price-value">¥' + bp.toLocaleString() + '</div>';
+      html += '<div class="price-sub">' + (((c.transactions||[])[0]||{}).date || '--') + '</div>';
+      html += '<span class="edit-hint">✏️</span>';
+      html += '</div>';
+    }
+    /* 现价 */
+    html += '<div class="price-block" style="cursor:pointer" onclick="event.stopPropagation(); showModal(\'' + c.id + '\')"><div class="price-label">现价</div><div class="price-value">' + (cp != null ? '¥' + cp.toLocaleString() : '--') + '</div><div class="price-sub">' + (src || '待更新') + '</div></div>';
+    html += '</div>';
+
+    html += '<div class="pl-row" onclick="showModal(\'' + c.id + '\')">';
+    var pctDisplay = (pct != null) ? ((pct >= 0 ? '+' : '') + pct.toFixed(1) + '%') : '--';
+    var profitDisplay = (profit != null) ? ((profit >= 0 ? '+' : '') + '¥' + profit.toLocaleString() + ' (' + pctDisplay + ')') : '待更新';
+    html += '<span class="pl-badge ' + pcls + '">' + profitDisplay + '</span>';
+    html += '<span class="decision-chip ' + di.cls + '">' + di.emoji + ' ' + di.text + '</span>';
+    html += '</div>';
+
+    html += refs + '</div></div></div>';
+  }
+  grid.innerHTML = html;
+}
+
+function updateTabs() {
+  var all = (portfolio.cards || []).length;
+  var counts = { pokemon: 0, yugioh: 0, onepiece: 0, conan: 0 };
+  for (var i = 0; i < (portfolio.cards || []).length; i++) {
+    var g = portfolio.cards[i].game;
+    if (counts.hasOwnProperty(g)) counts[g]++;
+  }
+  document.getElementById('tab-all').textContent = all;
+  document.getElementById('tab-pokemon').textContent = counts.pokemon;
+  document.getElementById('tab-yugioh').textContent = counts.yugioh;
+  document.getElementById('tab-onepiece').textContent = counts.onepiece;
+  document.getElementById('tab-conan').textContent = counts.conan;
+
+  var filtered = activeGame === 'all' ? (portfolio.cards||[]) : (portfolio.cards||[]).filter(function(x) { return x.game === activeGame; });
+  document.getElementById('resultCount').textContent = filtered.length + ' 张';
+}
+
+function updateTime() {
+  var t = (portfolio || {}).last_updated || '';
+  if (t) {
+    var d = new Date(t);
+    var s = d.toLocaleString('zh-CN');
+    document.getElementById('lastUpdate').innerHTML = '<span class="update-dot"></span>更新于 ' + s;
+    document.getElementById('footerTime').textContent = s;
+  }
+}
+
+/* ═══════════════════════════════════════════
+   Sort
+   ═══════════════════════════════════════════ */
+function sortCards(arr, mode) {
+  var copy = arr.slice();
+  if (mode === 'hasPrice') {
+    copy.sort(function(a,b){ var pa = cnyPrice(a) != null ? 0 : 1; var pb = cnyPrice(b) != null ? 0 : 1; return pa - pb; });
+  } else if (mode === 'gainDesc') {
+    copy.sort(function(a,b){ var ap = cnyPrice(a), bp2 = cnyPrice(b); var ab = ap != null ? ((ap - buyPrice(a))/buyPrice(a)) : -9999; var bb = bp2 != null ? ((bp2 - buyPrice(b))/buyPrice(b)) : -9999; return bb - ab; });
+  } else if (mode === 'gainAsc') {
+    copy.sort(function(a,b){ var ap = cnyPrice(a), bp2 = cnyPrice(b); var ab = ap != null ? ((ap - buyPrice(a))/buyPrice(a)) : 9999; var bb = bp2 != null ? ((bp2 - buyPrice(b))/buyPrice(b)) : 9999; return ab - bb; });
+  } else if (mode === 'buyDesc') {
+    copy.sort(function(a,b){ return buyPrice(b) - buyPrice(a); });
+  } else if (mode === 'gradeDesc') {
+    function gradeVal(x){ var g = x.grading && x.grading.grade ? x.grading.grade : (x.psa_grade||0); return Number(g)||0; }
+    copy.sort(function(a,b){ return gradeVal(b) - gradeVal(a); });
+  }
+  return copy;
+}
+
+/* ═══════════════════════════════════════════
+   Tabs
+   ═══════════════════════════════════════════ */
+var tabs = document.querySelectorAll('.filter-pill[data-game]');
+for (var i = 0; i < tabs.length; i++) {
+  tabs[i].addEventListener('click', function() {
+    for (var j = 0; j < tabs.length; j++) tabs[j].classList.remove('active');
+    this.classList.add('active');
+    activeGame = this.dataset.game;
+    render();
+  });
+}
+
+/* ═══════════════════════════════════════════
+   Modal
+   ═══════════════════════════════════════════ */
+function showModal(cid) {
+  var card = null;
+  for (var i = 0; i < (portfolio.cards || []).length; i++) {
+    if (portfolio.cards[i].id === cid) { card = portfolio.cards[i]; break; }
+  }
+  if (!card) return;
+  var p = card.current_prices || {};
+  var bp = buyPrice(card), cp = cnyPrice(card);
+  var profit = cp != null ? cp - bp : null;
+  var pct = bp > 0 && cp != null ? (profit / bp * 100) : null;
+  var grading = card.grading || (card.psa_grade ? { grader: 'PSA', grade: card.psa_grade, label: 'PSA ' + card.psa_grade } : null);
+  var grader = grading ? (grading.grader || '').toUpperCase() : '';
+  var grade = grading ? (grading.grade || 0) : 0;
+
+  var infoHtml = '<div class="modal-card-img">' + (card.image_url ? '<img src="' + escapeHtml(card.image_url) + '" alt="">' : '<span style="font-size:2rem;opacity:0.15">🃏</span>') + '</div>'
+    + '<div class="modal-card-detail">'
+    + '<div class="name">' + escapeHtml(card.name_cn || card.name_en || '') + '</div>'
+    + (card.name_en && card.name_en !== card.name_cn ? '<div class="en-name">' + escapeHtml(card.name_en) + '</div>' : '')
+    + '<div class="modal-meta-grid">'
+    + '<div><span class="meta-label">游戏</span> <span class="meta-value">' + gameName(card.game) + '</span></div>'
+    + '<div><span class="meta-label">版本</span> <span class="meta-value">' + langName(card.language) + '</span></div>'
+    + '<div><span class="meta-label">系列</span> <span class="meta-value">' + (card.series || '--') + '</span></div>'
+    + '<div><span class="meta-label">编号</span> <span class="meta-value">' + (card.card_number || '--') + '</span></div>'
+    + '<div><span class="meta-label">稀有度</span> <span class="meta-value">' + (card.rarity || '--') + '</span></div>'
+    + '<div><span class="meta-label">评级</span> <span class="meta-value">' + (grading ? grading.label : '--') + '</span></div>'
+    + '<div><span class="meta-label">买入价</span> <span class="meta-value">¥' + bp.toLocaleString() + '</span></div>'
+    + '<div><span class="meta-label">当前估值</span> <span class="meta-value" style="color:' + (pct > 0 ? 'var(--up)' : pct < 0 ? 'var(--down)' : '') + ';">' + (cp != null ? '¥' + cp.toLocaleString() : '待更新') + '</span></div>'
+    + '<div><span class="meta-label">盈亏</span> <span class="meta-value" style="color:' + (pct > 0 ? 'var(--up)' : pct < 0 ? 'var(--down)' : '') + ';">' + (pct != null ? (profit >= 0 ? '+' : '') + '¥' + profit.toLocaleString() + ' (' + (pct >= 0 ? '+' : '') + pct.toFixed(1) + '%)' : profit != null ? (profit >= 0 ? '+' : '') + '¥' + profit.toLocaleString() : '--') + '</span></div>'
+    + '<div><span class="meta-label">状态</span> <span class="meta-value">' + (card.status === 'holding' ? '持有中' : '已售出') + '</span></div>'
+    + '</div></div>';
+  document.getElementById('modalCardInfo').innerHTML = infoHtml;
+
+  document.getElementById('modalEditSection').style.display = 'none';
+  document.getElementById('modalEditSection').innerHTML = '';
+
+  var editBtn = document.getElementById('editBtn');
+  editBtn.style.display = 'inline-flex';
+  editBtn.onclick = function(e) {
+    e.stopPropagation();
+    var tx = (card.transactions||[])[0] || {};
+    var buyPriceVal = tx.price_cny || '';
+    var buyDateVal = tx.date || '';
+    var formHtml = '<div class="edit-form">'
+      + '<div class="edit-field"><label>买入价（¥）</label><input id="edit_buy_price" type="number" value="' + buyPriceVal + '"></div>'
+      + '<div class="edit-field"><label>买入日期</label><input id="edit_buy_date" type="date" value="' + buyDateVal + '"></div>'
+      + '<div class="edit-actions">'
+      + '<button id="cancelBtn" class="modal-btn modal-btn-cancel">取消</button>'
+      + '<button id="saveBtn" class="modal-btn modal-btn-save">💾 保存</button>'
+      + '</div></div>';
+    var editSection = document.getElementById('modalEditSection');
+    editSection.innerHTML = formHtml;
+    editSection.style.display = 'block';
+    editBtn.style.display = 'none';
+    editSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    document.getElementById('saveBtn').onclick = function(ev) {
+      ev.stopPropagation();
+      var newPrice = Number(document.getElementById('edit_buy_price').value) || 0;
+      var newDate = document.getElementById('edit_buy_date').value || '';
+      var txs = card.transactions || [];
+      if (txs.length === 0) txs.push({type:'buy', date:newDate, price_cny:newPrice});
+      else { txs[0].date = newDate; txs[0].price_cny = newPrice; }
+      card.transactions = txs;
+      var updated = portfolio;
+      for (var i = 0; i < updated.cards.length; i++){
+        if (updated.cards[i].id === card.id){ updated.cards[i] = card; break; }
+      }
+      fetch('/api/save-portfolio', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(updated)})
+      .then(function(r){ if(r.ok){ showToast('保存成功'); setTimeout(function(){ window.location.reload(); }, 800); } else { r.text().then(function(t){ showToast('保存失败: '+t); }); } })
+      .catch(function(err){ showToast('保存失败: '+err); });
+    };
+
+    document.getElementById('cancelBtn').onclick = function(ev) {
+      ev.stopPropagation();
+      editSection.style.display = 'none';
+      editSection.innerHTML = '';
+      editBtn.style.display = 'inline-flex';
+    };
+  };
+
+  // Construct verification URLs
+  var searchNameEn = encodeURIComponent(card.name_en || card.name_cn || '');
+  var gradingLabel = grading ? encodeURIComponent(grading.label || (grading.grader + ' ' + grading.grade)) : '';
+  var gameSlug = card.game === 'pokemon' ? 'pokemon' : card.game === 'yugioh' ? 'yugioh' : card.game === 'onepiece' ? 'one-piece-card-game' : 'pokemon';
+  var ebayKw = (p.sources_detail && p.sources_detail.serpapi_ebay && p.sources_detail.serpapi_ebay.search_query) ? encodeURIComponent(p.sources_detail.serpapi_ebay.search_query) : (searchNameEn + (gradingLabel ? '+' + gradingLabel : ''));
+  var tplNm = (p.sources_detail && p.sources_detail.tcgpricelookup && p.sources_detail.tcgpricelookup.raw_near_mint_market_usd);
+
+  var sources = [
+    { group: 'us', name: 'tcgapi.dev', val: p.tcgapi_usd, cur: 'USD', note: 'TCGPlayer 市场价', status: p.tcgapi_usd != null ? 'good' : 'na', url: 'https://www.tcgplayer.com/search/' + gameSlug + '/product?q=' + searchNameEn },
+    { group: 'us', name: 'eBay 成交', val: p.ebay_usd, cur: 'USD', note: '近期已售中位数', status: p.ebay_usd != null ? 'good' : 'na', url: 'https://www.ebay.com/sch/i.html?_nkw=' + ebayKw + '&LH_Sold=1&LH_Complete=1', cleanOpen: true },
+    { name: '镖卡 BiuCard', val: (function() {
+        var soldCny = p.biaoka_latest_sold_cny;
+        var psa10Cny = p.biaoka_psa10_cny;
+        if (soldCny && soldCny > 0) {
+          // 如果ACE卡看的是PSA10成交，显示折扣后价格
+          var sg = (p.biaoka_latest_sold_grade || '').toUpperCase();
+          if (grader === 'ACE' && sg.indexOf('PSA 10') >= 0) return Math.round(soldCny * 0.30);
+          return soldCny;
+        }
+        if (psa10Cny && psa10Cny > 0) {
+          var d = 1.0;
+          if (grader === 'PSA') { d = grade === 10 ? 1.0 : grade === 9 ? 0.35 : grade === 8 ? 0.18 : 0.12; }
+          else if (grader === 'ACE') { d = 0.30; }
+          return Math.round(psa10Cny * d);
+        }
+        return null;
+      })(), cur: 'CNY', note: (function() {
+        var bk = p.sources_detail && p.sources_detail.biaoka;
+        if (!bk) return '';
+        var parts = [];
+        if (bk.latest_sold_grade) parts.push(bk.latest_sold_grade);
+        if (bk.latest_sold_source) parts.push(bk.latest_sold_source);
+        if (bk.latest_sold_cny && grader === 'ACE') {
+          parts.push('原价¥' + Math.round(bk.latest_sold_cny) + '×0.30');
+        }
+        if (bk.grade_sale_count) parts.push(bk.grade_sale_count + '条成交');
+        return parts.join(' · ') || 'PSA10估值';
+      })(), status: (p.biaoka_latest_sold_cny || p.biaoka_psa10_cny) ? 'good' : 'na', group: 'cn', url: 'https://app.biucards.com/' },
+    { group: 'us', name: 'TCGPriceLookup', val: tplNm, cur: 'USD', note: 'TCGPlayer 多品相原价', status: tplNm != null ? 'info' : 'na', url: 'https://www.tcgpricelookup.com/' },
+    { group: 'us', name: 'PokemonPriceTracker', val: p.pokemonpricetracker_usd, cur: 'USD', note: 'TCGPlayer 市场价', status: p.pokemonpricetracker_usd != null ? 'good' : 'na', url: card.game === 'pokemon' ? 'https://www.pokemonpricetracker.com/card?search=' + searchNameEn : 'https://www.pokemonpricetracker.com/' },
+    { group: 'cn', name: '卡淘 CardHobby', val: p.cardhobby_cny, cur: 'CNY', note: '国内成交价', status: p.cardhobby_cny != null ? 'good' : 'na', url: 'https://www.cardhobby.com/search?keyword=' + encodeURIComponent(card.name_cn || card.name_en || '') },
+  ];
+  if (p.pricecharting_jp_cny) sources.push({ group: 'jp', name: 'PriceCharting JP', val: p.pricecharting_jp_cny, cur: 'CNY', note: '日版当前价换算', status: 'info', url: 'https://www.pricecharting.com/search-products?q=' + searchNameEn + '&type=prices' });
+  if (p.psa10_usd) sources.push({ group: 'us', name: 'PSA 10 参考', val: p.psa10_usd, cur: 'USD', note: '等级对比', status: 'info', url: 'https://www.ebay.com/sch/i.html?_nkw=' + searchNameEn + '+PSA+10&LH_Sold=1', cleanOpen: true });
+  if (p.psa9_usd) sources.push({ group: 'us', name: 'PSA 9 参考', val: p.psa9_usd, cur: 'USD', note: '等级对比', status: 'info', url: 'https://www.ebay.com/sch/i.html?_nkw=' + searchNameEn + '+PSA+9&LH_Sold=1', cleanOpen: true });
+  if (p.psa8_usd) sources.push({ group: 'us', name: 'PSA 8 参考', val: p.psa8_usd, cur: 'USD', note: '等级对比', status: 'info', url: 'https://www.ebay.com/sch/i.html?_nkw=' + searchNameEn + '+PSA+8&LH_Sold=1', cleanOpen: true });
+  if (p.raw_usd) sources.push({ group: 'us', name: '裸卡参考', val: p.raw_usd, cur: 'USD', note: '等级对比', status: 'info', url: 'https://www.ebay.com/sch/i.html?_nkw=' + searchNameEn + '&LH_Sold=1', cleanOpen: true });
+  if (p.ace10_estimated_cny) sources.push({ group: 'us', name: 'ACE 10 估值', val: p.ace10_estimated_cny, cur: 'CNY', note: '基于PSA综合估值', status: 'good', url: 'https://www.ebay.com/sch/i.html?_nkw=' + searchNameEn + '+ACE+10&LH_Sold=1', cleanOpen: true });
+  // 镖卡原始PSA10估值（参考用）
+  if (p.biaoka_psa10_cny && p.biaoka_psa10_cny > 0 && (grader !== 'PSA' || (grader === 'PSA' && grade !== 10))) {
+    sources.push({ group: 'cn', name: '镖卡 PSA10 原始价', val: p.biaoka_psa10_cny, cur: 'CNY', note: '镖卡PSA10估值(未打折)', status: 'info', url: 'https://app.biucards.com/' });
+  }
+  // 镖卡原始成交记录
+  var bkDetail = p.sources_detail && p.sources_detail.biaoka;
+  if (bkDetail && bkDetail.latest_sold_cny && grader === 'ACE') {
+    sources.push({ group: 'cn', name: '镖卡 PSA10 成交原价', val: bkDetail.latest_sold_cny, cur: 'CNY', note: (bkDetail.latest_sold_source || '') + ' ' + (bkDetail.latest_sold_grade || '') + ' 成交 · ' + (bkDetail.latest_sold_date || '').substring(0, 10), status: 'info', url: 'https://app.biucards.com/' });
+  }
+
+  // 闲鱼参考价 (社区二手交易)
+  var xy = p.sources_detail && p.sources_detail.xianyu;
+  if (xy) {
+    var xyNote = '搜索"' + (xy.keyword || '') + '" ' + (xy.count || 0) + '个结果';
+    if (xy.items && xy.items.length > 0) {
+      xyNote += ' · 最低: ' + (xy.items[0].price_display || '¥' + xy.lowest_cny);
+    }
+    sources.push({ group: 'cn', name: '闲鱼 最低价', val: xy.lowest_cny, cur: 'CNY', note: xyNote, status: 'info', url: 'https://www.goofish.com/search?q=' + encodeURIComponent(xy.keyword || '') });
+    if (xy.median_cny && xy.median_cny !== xy.lowest_cny) {
+      sources.push({ group: 'cn', name: '闲鱼 中位价', val: xy.median_cny, cur: 'CNY', note: 'C2C二手，价格波动大', status: 'info', url: 'https://www.goofish.com/search?q=' + encodeURIComponent(xy.keyword || '') });
+    }
+  }
+
+  // Unified collector rows: source status + confidence + trend availability.
+  var collectorRows = p.collector_sources || [];
+  for (var crIdx = 0; crIdx < collectorRows.length; crIdx++) {
+    var cr = collectorRows[crIdx] || {};
+    var pc = cr.price_current || {};
+    var trendCount = (cr.price_history || []).length;
+    var soldCount = (cr.sold_records || []).length;
+    var rawRef = cr.raw_ref || {};
+    var noteParts = [];
+    if (cr.status) noteParts.push(cr.status);
+    if (cr.confidence && cr.confidence !== 'none') noteParts.push('confidence: ' + cr.confidence);
+    if (trendCount) noteParts.push(trendCount + '个走势点');
+    if (soldCount) noteParts.push(soldCount + '条成交');
+    if (rawRef.matched_serial) noteParts.push('#' + rawRef.matched_serial);
+    if (cr.message && cr.message !== 'collected') noteParts.push(cr.message);
+    sources.push({
+      group: inferCollectorGroup(cr, card),
+      name: '采集器 · ' + (cr.source || 'unknown'),
+      val: pc.amount != null ? pc.amount : null,
+      cur: pc.currency || cr.currency || 'CNY',
+      note: noteParts.join(' · ') || '统一采集结果',
+      status: collectorStatusClass(cr),
+      url: collectorSourceUrl(cr),
+      alwaysShow: shouldShowCollectorRow(cr, card)
+    });
+  }
+
+  var tableHtml = '<h3>📊 价格数据源 <span style="font-size:0.72rem;font-weight:400;color:var(--text-tertiary);">点击数据源名称可跳转验证</span></h3><table class="val-table"><thead><tr><th>数据源</th><th>价格</th><th>状态</th><th>说明</th></tr></thead><tbody>';
+  var order = sourceGroupOrder(card);
+  for (var og = 0; og < order.length; og++) {
+    var group = order[og];
+    var groupSources = sources.filter(function(s) {
+      return inferPriceSourceGroup(s, card) === group && shouldShowPriceSource(s, card);
+    });
+    if (!groupSources.length) continue;
+    tableHtml += '<tr class="source-group-row"><td colspan="4">' + sourceGroupLabel(group) + '</td></tr>';
+    for (var i = 0; i < groupSources.length; i++) {
+      var s = groupSources[i];
+      var vtext = s.val != null ? (s.cur === 'USD' ? '$' + s.val.toLocaleString() + ' (≈¥' + Math.round(s.val * 7.2).toLocaleString() + ')' : '¥' + s.val.toLocaleString()) : '--';
+      var stext = s.status === 'good' ? '✅ 可用' : s.status === 'info' ? '📘 参考' : (s.note || '--').split(' · ')[0];
+      var nameHtml = renderSourceName(s);
+      tableHtml += '<tr><td>' + nameHtml + '</td><td style="font-weight:600;word-break:break-all;">' + escapeHtml(vtext) + '</td><td><span class="source-tag ' + s.status + '">' + escapeHtml(stext) + '</span></td><td style="font-size:0.75rem;color:var(--text-tertiary);word-break:break-all;">' + escapeHtml(s.note) + '</td></tr>';
+    }
+  }
+  tableHtml += '</tbody></table>';
+  document.getElementById('modalPriceTable').innerHTML = tableHtml;
+
+  var logicHtml = '<h3>🧠 估值逻辑</h3><div class="val-logic">';
+  if (cp == null) {
+    logicHtml += '<div class="logic-title">暂无估值</div><p>该卡牌尚未从任何数据源获取到有效价格。</p>';
+  } else if (p.ace10_estimated_cny) {
+    logicHtml += '<div class="logic-title">ACE 10 估值方法</div><ul><li>ACE 是英国评级机构，市场认知度低于 PSA</li><li>ACE 10 通常介于 PSA 8-9 之间</li><li>参考: PSA10 $' + (p.psa10_usd || 0).toLocaleString() + ' / PSA9 $' + (p.psa9_usd || 0).toLocaleString() + ' / PSA8 $' + (p.psa8_usd || 0).toLocaleString() + '</li><li>估值取 PSA8-9 中间偏上 = <strong>¥' + p.ace10_estimated_cny.toLocaleString() + '</strong></li><li>⚠️ AI估计，实际成交有偏差</li></ul>';
+  } else {
+    var src = priceSource(card);
+    logicHtml += '<div class="logic-title">来源: ' + (src || '未知') + '</div><ul><li>价格优先级: 卡淘 > ACE估值 > TCG API > eBay</li><li>汇率: 1 USD ≈ ¥7.2</li><li>多源偏差 >30% 触发警告</li></ul>';
+  }
+  if (p.price_note) logicHtml += '<p style="margin-top:8px;font-size:0.78rem;">💡 ' + p.price_note + '</p>';
+  var collectorInsights = renderCollectorInsights(p, card);
+  if (collectorInsights) {
+    logicHtml += '<div class="logic-title" style="margin-top:14px;">采集器走势与成交</div>' + collectorInsights;
+  }
+  logicHtml += '</div>';
+  document.getElementById('modalLogic').innerHTML = logicHtml;
+  document.getElementById('modalOverlay').classList.add('active');
+}
+
+function cleanOpenUrl(url) {
+  var w = window.open('about:blank', '_blank');
+  if (w) {
+    w.document.open();
+    w.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>正在跳转...</title><style>body{display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:#666;}</style></head><body><p>正在跳转，请稍候...</p></body></html>');
+    w.document.close();
+    setTimeout(function() { w.location.href = url; }, 100);
+  } else {
+    window.open(url, '_blank', 'noreferrer');
+  }
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('active');
+  var editBtn = document.getElementById('editBtn');
+  if (editBtn) editBtn.style.display = 'inline-flex';
+  var editSection = document.getElementById('modalEditSection');
+  if (editSection) { editSection.style.display = 'none'; editSection.innerHTML = ''; }
+}
+document.getElementById('modalOverlay').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
+document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeModal(); });
+
+/* ═══════════════════════════════════════════
+   Inline Edit — Click price to edit directly (floating popover)
+   ═══════════════════════════════════════════ */
+var activeOverlay = null;
+var activePopup = null;
+function closeInlineEdit() {
+  if (activePopup) { activePopup.remove(); activePopup = null; }
+  if (activeOverlay) { activeOverlay.remove(); activeOverlay = null; }
+}
+function inlineEditBuyPrice(cid, el) {
+  closeInlineEdit();
+  var card = null;
+  for (var i = 0; i < (portfolio.cards || []).length; i++) {
+    if (portfolio.cards[i].id === cid) { card = portfolio.cards[i]; break; }
+  }
+  if (!card) return;
+
+  var tx = (card.transactions || [])[0] || {};
+  var curPrice = tx.price_cny || '';
+  var curDate = tx.date || '';
+  var cardName = card.name_cn || card.name_en || '';
+
+  // Backdrop overlay
+  var overlay = document.createElement('div');
+  overlay.className = 'inline-edit-overlay';
+  overlay.addEventListener('click', function() { closeInlineEdit(); });
+  document.body.appendChild(overlay);
+  activeOverlay = overlay;
+
+  // Floating popover
+  var popup = document.createElement('div');
+  popup.className = 'inline-edit-popup';
+  popup.innerHTML = '<div class="popup-header">'
+    + '<span class="popup-title">✏️ 编辑买入价</span>'
+    + '<button class="popup-close" id="ie_close_x">✕</button>'
+    + '</div>'
+    + '<div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:10px;">' + escapeHtml(cardName) + '</div>'
+    + '<label>买入价（¥）</label>'
+    + '<input type="number" placeholder="输入买入价格" value="' + curPrice + '" id="ie_price_' + cid + '">'
+    + '<label>买入日期</label>'
+    + '<input type="date" value="' + curDate + '" id="ie_date_' + cid + '">'
+    + '<div class="popup-actions">'
+    + '<button class="popup-btn cancel" id="ie_cancel">取消</button>'
+    + '<button class="popup-btn save" id="ie_save">💾 保存</button>'
+    + '</div>';
+
+  document.body.appendChild(popup);
+  activePopup = popup;
+
+  // Position: anchored to the clicked price block, viewport coords
+  var rect = el.getBoundingClientRect();
+  var popW = 260; // estimated width
+  var popH = 280; // estimated height
+  var left = rect.left;
+  var top = rect.bottom + 8;
+
+  // If popup would go off-screen right, align to right edge
+  if (left + popW > window.innerWidth - 16) left = window.innerWidth - popW - 16;
+  // If popup would go off-screen bottom, flip above
+  if (top + popH > window.innerHeight - 16) top = rect.top - popH - 8;
+  // Clamp left
+  if (left < 16) left = 16;
+
+  popup.style.left = left + 'px';
+  popup.style.top = top + 'px';
+
+  // Focus input
+  var priceInput = document.getElementById('ie_price_' + cid);
+  setTimeout(function() { priceInput.focus(); priceInput.select(); }, 60);
+
+  // Stop clicks inside popup from closing overlay
+  popup.addEventListener('click', function(e) { e.stopPropagation(); });
+
+  // Close X
+  document.getElementById('ie_close_x').addEventListener('click', function(ev) {
+    ev.stopPropagation(); closeInlineEdit();
+  });
+
+  // Save
+  document.getElementById('ie_save').addEventListener('click', function(ev) {
+    ev.stopPropagation();
+    var newPrice = Number(priceInput.value) || 0;
+    var newDate = document.getElementById('ie_date_' + cid).value || '';
+    var txs = card.transactions || [];
+    if (txs.length === 0) txs.push({type:'buy', date:newDate, price_cny:newPrice});
+    else { txs[0].date = newDate; txs[0].price_cny = newPrice; }
+    card.transactions = txs;
+    var updated = portfolio;
+    for (var i = 0; i < updated.cards.length; i++){
+      if (updated.cards[i].id === card.id){ updated.cards[i] = card; break; }
+    }
+    fetch('/api/save-portfolio', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(updated)})
+    .then(function(r){
+      if (r.ok) {
+        closeInlineEdit();
+        showToast('✅ 买入价已更新');
+        render();
+      } else { r.text().then(function(t){ showToast('保存失败: '+t); }); }
+    })
+    .catch(function(err){ showToast('保存失败: '+err); });
+  });
+
+  // Cancel
+  document.getElementById('ie_cancel').addEventListener('click', function(ev) {
+    ev.stopPropagation(); closeInlineEdit();
+  });
+
+  // Enter to save, Escape to cancel
+  popup.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { document.getElementById('ie_save').click(); }
+    if (e.key === 'Escape') { closeInlineEdit(); }
+  });
+}
+
+init();
+</script>
+</body>
+</html>
