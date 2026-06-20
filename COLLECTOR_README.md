@@ -4,6 +4,8 @@
 
 ## 运行方式
 
+首次 clone 后，如果要用真实持仓运行采集器，先复制 `data/portfolio.example.json` 为 `data/portfolio.json`，再填自己的卡牌。真实 `portfolio.json` 已在 `.gitignore` 中忽略，避免把持仓、成本和价格快照提交到 GitHub。
+
 ```bash
 python scripts/collect_card_prices.py --dry-run --limit 2
 python scripts/collect_card_prices.py
@@ -17,7 +19,8 @@ python scripts/collect_card_prices.py
 
 正式运行会写入：
 
-- `data/portfolio.json`：每张卡的 `current_prices.collector_sources`。
+- `data/portfolio.json`：本地真实持仓，每张卡的 `current_prices.collector_sources` 会被更新。该文件不会提交到 Git。
+- `data/portfolio.example.json`：公开示例数据，供页面 fallback 和新用户参考。
 - `data/price_history/YYYY-MM-DD.json`：当天价格快照。
 - `data/collector_runs/YYYYMMDDTHHMMSS.json`：完整采集结果和状态。
 - `data/backups/portfolio.json.collector.*.bak`：运行前备份。
