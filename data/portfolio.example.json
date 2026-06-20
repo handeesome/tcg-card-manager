@@ -10,6 +10,7 @@
       "series": "Sample Set",
       "card_number": "001/100",
       "rarity": "Promo",
+      "image_url": "https://images.pokemontcg.io/base1/58_hires.png",
       "status": "holding",
       "grading": {
         "grader": "PSA",
@@ -62,6 +63,7 @@
       "series": "Sample Japanese Promo",
       "card_number": "S-P",
       "rarity": "Promo",
+      "image_url": "https://images.pokemontcg.io/base1/58_hires.png",
       "status": "holding",
       "transactions": [
         {
