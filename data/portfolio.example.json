@@ -1,0 +1,100 @@
+{
+  "last_updated": "2026-06-21T00:00:00+08:00",
+  "cards": [
+    {
+      "id": "example_en_pikachu",
+      "game": "pokemon",
+      "language": "en",
+      "name_cn": "示例皮卡丘",
+      "name_en": "Pikachu",
+      "series": "Sample Set",
+      "card_number": "001/100",
+      "rarity": "Promo",
+      "status": "holding",
+      "grading": {
+        "grader": "PSA",
+        "grade": 9,
+        "label": "PSA 9 MINT"
+      },
+      "transactions": [
+        {
+          "type": "buy",
+          "date": "2026-01-01",
+          "price_cny": 1000
+        }
+      ],
+      "current_prices": {
+        "tcgapi_usd": 180,
+        "collector_sources": [
+          {
+            "card_id": "example_en_pikachu",
+            "source": "example_us",
+            "market_group": "us",
+            "price_current": {
+              "amount": 1296,
+              "currency": "CNY",
+              "kind": "sample_price"
+            },
+            "price_history": [
+              {"time": "2026-06-18", "value": 1200, "price_cny": 1200, "currency": "CNY"},
+              {"time": "2026-06-19", "value": 1250, "price_cny": 1250, "currency": "CNY"},
+              {"time": "2026-06-20", "value": 1296, "price_cny": 1296, "currency": "CNY"}
+            ],
+            "sold_records": [],
+            "grade": {"key": "psa9", "grader": "PSA", "grade": 9},
+            "currency": "CNY",
+            "fetched_at": "2026-06-21T00:00:00+08:00",
+            "confidence": "medium",
+            "status": "ok",
+            "message": "sample data",
+            "raw_ref": {}
+          }
+        ]
+      }
+    },
+    {
+      "id": "example_jp_pikachu",
+      "game": "pokemon",
+      "language": "jp",
+      "name_cn": "日版示例皮卡丘",
+      "name_en": "Pikachu",
+      "name_jp": "ピカチュウ",
+      "series": "Sample Japanese Promo",
+      "card_number": "S-P",
+      "rarity": "Promo",
+      "status": "holding",
+      "transactions": [
+        {
+          "type": "buy",
+          "date": "2026-01-10",
+          "price_cny": 800
+        }
+      ],
+      "current_prices": {
+        "collector_sources": [
+          {
+            "card_id": "example_jp_pikachu",
+            "source": "jp_market_reference",
+            "market_group": "jp",
+            "price_current": null,
+            "price_history": [],
+            "sold_records": [],
+            "grade": {"key": "raw", "grader": null, "grade": null},
+            "currency": "CNY",
+            "fetched_at": "2026-06-21T00:00:00+08:00",
+            "confidence": "reference",
+            "status": "reference_only",
+            "message": "manual Japanese market verification links",
+            "raw_ref": {
+              "links": [
+                {"label": "Aucfan 落札相場", "kind": "sold_reference", "url": "https://aucfan.com/"},
+                {"label": "Mercari JP", "kind": "listing_reference", "url": "https://jp.mercari.com/"},
+                {"label": "Yahoo!オークション", "kind": "auction_reference", "url": "https://auctions.yahoo.co.jp/"}
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

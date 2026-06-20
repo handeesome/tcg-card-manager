@@ -1,0 +1,17 @@
+{
+  "jihuanshe": {
+    "token": "",
+    "note": "Optional. Your own JiHuanShe Bearer token from a normal logged-in session."
+  },
+  "biaoka": {
+    "token": "",
+    "note": "Optional. Your own BiaoKa/BiuCard Bearer token from a normal logged-in session."
+  },
+  "external_apis": {
+    "tcgapi_key": "",
+    "serpapi_key": "",
+    "tcgpricelookup_key": "",
+    "pokeprice_key": "",
+    "pricecharting_token": ""
+  }
+}

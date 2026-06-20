@@ -1,0 +1,34 @@
+# Local secrets and personal portfolio data
+data/api_tokens.json
+data/portfolio.json
+data/xianyu_cookie.json
+data/xianyu_qr.png
+scripts/captured_requests/
+scripts/**/latest_token.txt
+
+# Generated collector/runtime output
+data/backups/
+data/collector_runs/
+data/price_history/
+data/*.log
+data/*.pid
+data/playwright-*.png
+*.log
+*.pid
+
+# Dependencies and caches
+node_modules/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Local app bundles/build artifacts
+*.app/
+dist/
+build/
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
