@@ -13,14 +13,38 @@ data/price_history/
 data/*.log
 data/*.pid
 data/playwright-*.png
+JIHUANSHE_WORKLOG_*.md
 *.log
 *.pid
 
 # Dependencies and caches
 node_modules/
+.venv/
+venv/
+env/
 __pycache__/
 *.py[cod]
 .pytest_cache/
+
+# Android/app reverse-engineering inputs and generated output
+*.apk
+apk_extract/
+apk_new/
+analysis/
+*.db
+*.sqlite
+*.sqlite3
+*.db-shm
+*.db-wal
+
+# Local mobile/proxy tooling and captures
+tools/frida_py/
+tools/frida-server-*
+tools/*.apk
+scripts/proxy_setup/
+*.har
+*.pcap
+*.pcapng
 
 # Local app bundles/build artifacts
 *.app/
@@ -32,3 +56,5 @@ build/
 Thumbs.db
 .idea/
 .vscode/
+.agents/
+.codex/

@@ -59,8 +59,12 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.path = urlparse(self.path).path
         super().do_GET()
 
-print(f"TCG Dashboard → http://localhost:{PORT}/web/")
+print(f"TCG Dashboard → http://127.0.0.1:{PORT}/web/")
+print(f"Alternate URL: http://localhost:{PORT}/web/")
 print(f"API available: POST /api/save-portfolio (local only)")
 print(f"按 Ctrl+C 停止")
 
-http.server.HTTPServer(("0.0.0.0", PORT), Handler).serve_forever()
+class ThreadingHTTPServer(http.server.ThreadingHTTPServer):
+    daemon_threads = True
+
+ThreadingHTTPServer(("0.0.0.0", PORT), Handler).serve_forever()

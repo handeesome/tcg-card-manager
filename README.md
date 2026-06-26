@@ -19,6 +19,7 @@ python server.py
 然后打开：
 
 ```text
+http://127.0.0.1:8765/web/
 http://localhost:8765/web/
 ```
 
@@ -47,6 +48,27 @@ python scripts/collect_card_prices.py
 
 真实 token 或 API key 可以放在 `data/api_tokens.json`，格式参考 `data/api_tokens.example.json`。这些私密配置不会提交到 Git。
 
+## 集换社采集研究
+
+仓库包含一组面向授权账号和本地抓包样本的集换社辅助脚本，用来探测 endpoint、导入脱敏抓包、分析候选价格字段、归一化为 `collector_sources`，并预览写回真实持仓。
+
+常用入口：
+
+```bash
+python scripts/probe_jihuanshe.py
+python scripts/run_jihuanshe_pipeline.py path/to/capture.har --keep-raw-data --card-id <portfolio-card-id>
+```
+
+这条路线只用于个人数据采集研究，不尝试绕过平台权限、风控或加密保护。抓包原文、mitm 输出、分析结果和真实持仓默认写入被忽略的本地目录。详细流程见 [COLLECTOR_README.md](COLLECTOR_README.md)。
+
+## 仓库卫生
+
+这个仓库只提交源码、示例数据和文档。以下内容默认留在本地，不进入 GitHub：
+
+- 真实持仓、token、cookie、运行记录和备份。
+- APK、APK 解包目录、静态分析输出、Frida/ADB 二进制和 mitm 证书。
+- 抓包样本、代理输出、Python 缓存、虚拟环境和本地 Codex 配置。
+
 ## 目录结构
 
 ```text
@@ -56,6 +78,12 @@ data/
 scripts/
   collect_card_prices.py
   chinese_platform_api.py
+  probe_jihuanshe.py
+  run_jihuanshe_pipeline.py
+  import_jihuanshe_capture.py
+  analyze_jihuanshe_captures.py
+  normalize_jihuanshe_captures.py
+  apply_jihuanshe_normalized.py
 web/
   index.html
 server.py

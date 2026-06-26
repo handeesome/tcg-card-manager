@@ -32,6 +32,8 @@ from collector_config import get_api_key  # noqa: E402
 
 FAIL_REASONS = {
     "auth_required",
+    "permission_denied",
+    "app_upgrade_required",
     "raw_data_unresolved",
     "no_match",
     "no_price",
@@ -889,15 +891,20 @@ def collect_jihuanshe_audit(card: dict, client: JiHuanSheAPI, live: bool = True)
     query = card_query(card, prefer_japanese=True)
     resp = client.search_card_versions(query)
     code = resp.get("code")
+    error_key = str(resp.get("error") or resp.get("code_name") or "")
+    message = resp.get("msg") or resp.get("message") or ""
     if code in (401, 403):
         result["status"] = "auth_required"
         result["message"] = "jihuanshe auth required"
+    elif error_key == "MARKET_PERMISSION_DENY" or "无权限" in str(message):
+        result["status"] = "permission_denied"
+        result["message"] = message or "jihuanshe market permission denied"
     elif "raw_data" in resp:
         result["status"] = "raw_data_unresolved"
         result["message"] = "live endpoint returned raw_data; decoder not yet proven"
     elif code and code != 200:
         result["status"] = "error"
-        result["message"] = resp.get("msg") or resp.get("message") or "jihuanshe request failed"
+        result["message"] = message or "jihuanshe request failed"
     else:
         result["status"] = "no_price"
         result["message"] = "jihuanshe endpoint reachable but no normalized price mapping exists"
@@ -956,14 +963,28 @@ def update_card_from_fallback(card: dict, result: dict) -> None:
 
 
 def merge_collector_source(existing, result: dict) -> list:
-    rows = [r for r in (existing or []) if r.get("source") != result.get("source")]
-    rows.append(result)
+    source = result.get("source")
+    rows = [r for r in (existing or []) if r.get("source") != source]
+    old = next((r for r in (existing or []) if r.get("source") == source), None)
+
+    def has_usable_price(row) -> bool:
+        current = (row or {}).get("price_current") or {}
+        return bool(current.get("amount")) or (row or {}).get("status") == "ok"
+
+    # Keep a previous usable source when the new run only produced a transient
+    # no_price/error/auth result.
+    if old and has_usable_price(old) and not has_usable_price(result):
+        rows.append(old)
+    else:
+        rows.append(result)
     return rows
 
 
 def update_card_from_result(card: dict, result: dict) -> None:
     prices = card.setdefault("current_prices", {})
     prices["collector_sources"] = merge_collector_source(prices.get("collector_sources"), result)
+    if result.get("status") != "ok":
+        return
     if result.get("source") == "biaoka":
         update_card_from_biaoka(card, result)
     else:
@@ -1071,7 +1092,6 @@ def main() -> int:
             rows.extend(collect_third_party_fallbacks(card, live=live))
         results_by_card[card_id] = rows
         if not args.dry_run:
-            card.setdefault("current_prices", {})["collector_sources"] = []
             for row in rows:
                 update_card_from_result(card, row)
 
